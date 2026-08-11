@@ -1,0 +1,27 @@
+# See https://help.github.com/articles/ignoring-files/ for more detailed information.
+
+node_modules/
+.expo/
+dist/
+web-build/
+
+# Native builds & credentials
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Debug logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+metro-bundler-*.log
+
+# Mac OS
+.DS_Store
+
+# Environment variables
+.env
+.env*.local
