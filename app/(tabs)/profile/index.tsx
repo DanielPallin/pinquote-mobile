@@ -1,32 +1,101 @@
 // app/(tabs)/profile/index.tsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, Text, StyleSheet, Image, TouchableOpacity, 
-  SafeAreaView, ScrollView, Platform
+  SafeAreaView, ScrollView, ActivityIndicator, Alert
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { 
-  ArrowLeft, Bell, Edit3, Share, Crown, LayoutTemplate, Settings, Star 
+  ArrowLeft, Bell, Edit3, Share, Crown, LayoutTemplate, Settings, Heart 
 } from 'lucide-react-native';
 import NotificationBell from '../../../components/NotificationBell';
+import { supabase } from '../../../services/supabase';
+
+interface ProfileData {
+  id: string;
+  username: string;
+  avatar_url: string | null;
+  bio: string | null;
+  following: number;
+  followers: number;
+  favorites: number;
+  isPro: boolean;
+}
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const [user, setUser] = useState<ProfileData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Mock-data - detta byts senare ut mot en hook (t.ex. useProfile)
-  const user = {
-    username: 'Username1',
-    bio: 'Mostly quotes from my clown family',
-    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300',
-    following: 154,
-    followers: 98,
-    isPro: true
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
+
+  const fetchUserProfile = async () => {
+    try {
+      // 1. Get current authenticated user
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !authUser) {
+        throw new Error('Not authenticated');
+      }
+
+      // 2. Fetch all profile data and counts concurrently for maximum performance
+      const [
+        { data: profile, error: profileError },
+        { count: followersCount, error: followersError },
+        { count: followingCount, error: followingError },
+        { count: favoritesCount, error: favoritesError }
+      ] = await Promise.all([
+        supabase.from('profiles').select('id, username, avatar_url, bio').eq('id', authUser.id).single(),
+        supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', authUser.id),
+        supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', authUser.id),
+        supabase.from('favorites').select('*', { count: 'exact', head: true }).eq('user_id', authUser.id)
+      ]);
+
+      if (profileError) throw profileError;
+
+      // 3. Update the state with actual database counts
+      if (profile) {
+        setUser({
+          id: profile.id,
+          username: profile.username || 'Unknown',
+          avatar_url: profile.avatar_url,
+          bio: profile.bio,
+          following: followingCount || 0,
+          followers: followersCount || 0,
+          favorites: favoritesCount || 0,
+          isPro: true // Mocked until subscriptions are implemented
+        });
+      }
+
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      Alert.alert('Error', 'Could not load profile data.');
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#0f172a" />
+      </View>
+    );
+  }
+
+  if (!user) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text style={styles.errorText}>Could not load profile.</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       {/* HEADER */}
-
       <View style={styles.header}>
         <Text style={styles.headerTitle}>PinQuote</Text>
         <NotificationBell />
@@ -36,7 +105,6 @@ export default function ProfileScreen() {
         
         {/* USER INFO SECTION */}
         <View style={styles.userInfoSection}>
-          {/* Avatar & Username */}
           <View style={styles.avatarColumn}>
             <View style={styles.usernameRow}>
               <Text style={styles.username}>{user.username}</Text>
@@ -45,14 +113,21 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
             <View style={styles.avatarContainer}>
-              <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
+              {user.avatar_url ? (
+                 <Image source={{ uri: user.avatar_url }} style={styles.avatar} />
+              ) : (
+                 <View style={styles.avatarPlaceholder}>
+                    <Text style={styles.avatarPlaceholderText}>
+                      {user.username.charAt(0).toUpperCase()}
+                    </Text>
+                 </View>
+              )}
               <TouchableOpacity style={styles.shareBtn}>
-                <Share size={16} color="#000" />
+                <Share size={16} color="#000000" />
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Bio */}
           <View style={styles.bioColumn}>
             <View style={styles.bioHeader}>
               <Text style={styles.bioLabel}>Bio</Text>
@@ -61,7 +136,9 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
             <View style={styles.bioBox}>
-              <Text style={styles.bioText}>{user.bio}</Text>
+              <Text style={styles.bioText}>
+                {user.bio || 'This user has not set a bio yet. Click the edit button to add one!'}
+              </Text>
             </View>
           </View>
         </View>
@@ -74,7 +151,6 @@ export default function ProfileScreen() {
           >
             <Text style={styles.gridLabel}>Published Quotes</Text>
             <View style={styles.gridBox}>
-               {/* Enkel illustration av ett rutnät */}
                <View style={styles.gridRow}>
                  <View style={styles.gridCell} /><View style={styles.gridCell} />
                </View>
@@ -103,7 +179,6 @@ export default function ProfileScreen() {
         {/* BOTTOM SECTION: STATS & SETTINGS */}
         <View style={styles.bottomSection}>
           
-          {/* Stats Column */}
           <View style={styles.statsColumn}>
             <TouchableOpacity style={styles.statPill}>
               <Text style={styles.statPillText}>Following</Text>
@@ -117,11 +192,14 @@ export default function ProfileScreen() {
 
             <TouchableOpacity style={styles.statPill}>
               <Text style={styles.statPillText}>Favourites</Text>
-              <Star size={20} color="#000" fill="#facc15" style={{ marginTop: 4 }} />
+              <View style={styles.favoriteRow}>
+                <Text style={styles.statPillNumber}>{user.favorites}</Text>
+                {/* Changed from Star to Heart with a nice red color */}
+                <Heart size={16} color="#ef4444" fill="#ef4444" />
+              </View>
             </TouchableOpacity>
           </View>
 
-          {/* Settings List */}
           <View style={styles.settingsList}>
             <TouchableOpacity style={styles.settingsItem}>
               <Crown size={20} color="#eab308" />
@@ -153,9 +231,10 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
+  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8fafc' },
+  errorText: { fontSize: 16, color: '#ef4444', fontWeight: 'bold' },
   scrollContent: { padding: 20, paddingBottom: 40 },
   
-  // Header
   header: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
@@ -171,7 +250,6 @@ const styles = StyleSheet.create({
     color: '#0f172a' 
   },
 
-  // User Info
   userInfoSection: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 32, gap: 16 },
   avatarColumn: { alignItems: 'center', flex: 1 },
   usernameRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
@@ -179,14 +257,15 @@ const styles = StyleSheet.create({
   editIcon: { marginLeft: 6 },
   avatarContainer: { position: 'relative' },
   avatar: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#cbd5e1' },
-  shareBtn: { position: 'absolute', bottom: -4, right: -4, backgroundColor: '#fff', padding: 8, borderRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
+  avatarPlaceholder: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#e2e8f0', justifyContent: 'center', alignItems: 'center' },
+  avatarPlaceholderText: { fontSize: 32, fontWeight: '800', color: '#64748b' },
+  shareBtn: { position: 'absolute', bottom: -4, right: -4, backgroundColor: '#ffffff', padding: 8, borderRadius: 20, shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
   bioColumn: { flex: 1.2 },
   bioHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
   bioLabel: { fontSize: 16, fontWeight: '800', color: '#1e293b' },
   bioBox: { backgroundColor: '#f1f5f9', padding: 12, borderRadius: 16, minHeight: 80 },
   bioText: { fontSize: 14, color: '#475569', lineHeight: 20, fontWeight: '500' },
 
-  // Grids
   gridsSection: { flexDirection: 'row', justifyContent: 'space-between', gap: 16, marginBottom: 40 },
   gridBtn: { flex: 1, alignItems: 'center' },
   gridLabel: { fontSize: 15, fontWeight: '800', color: '#1e293b', marginBottom: 12 },
@@ -194,12 +273,12 @@ const styles = StyleSheet.create({
   gridRow: { flex: 1, flexDirection: 'row', gap: 8, marginBottom: 8 },
   gridCell: { flex: 1, backgroundColor: '#e2e8f0', borderRadius: 12 },
 
-  // Bottom Section
   bottomSection: { flexDirection: 'row', justifyContent: 'space-between', gap: 24 },
   statsColumn: { flex: 1, gap: 16 },
   statPill: { backgroundColor: '#f1f5f9', paddingVertical: 12, borderRadius: 24, alignItems: 'center' },
   statPillText: { fontSize: 13, fontWeight: '700', color: '#64748b', marginBottom: 4 },
   statPillNumber: { fontSize: 16, fontWeight: '900', color: '#1e293b' },
+  favoriteRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   
   settingsList: { flex: 1.5, gap: 24, justifyContent: 'center' },
   settingsItem: { flexDirection: 'row', alignItems: 'center', gap: 12 },
