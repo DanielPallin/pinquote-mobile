@@ -1,47 +1,70 @@
-// src/store/useCreateQuoteStore.ts
 import { create } from 'zustand';
 
-interface TargetUser {
-  id?: string;
-  username?: string;
-  email?: string;
-  customName?: string;
-  avatarUrl?: string;
-}
+export type QuoteTemplate = {
+  id: string;
+  name: string;
+  backgroundColor: string;
+  textColor: string;
+  isPro: boolean;
+};
+
+type TargetType = 'user' | 'email' | 'custom' | null;
 
 interface CreateQuoteState {
-  // Steg 1: Vem citeras?
-  target: TargetUser | null;
-  setTarget: (target: TargetUser) => void;
+  // Media
+  mediaType: 'template' | 'live_photo';
+  template: QuoteTemplate | null;
+  livePhotoUri: string | null;
   
-  // Steg 2: Citatet och designen
+  // Content
   quoteText: string;
+  
+  // Attribution (The Target)
+  targetType: TargetType;
+  targetId: string | null;
+  targetUsername: string | null;
+  targetEmail: string | null;
+  customName: string | null;
+  
+  // Actions
+  setMediaAsTemplate: (template: QuoteTemplate) => void;
+  setMediaAsLivePhoto: (uri: string) => void;
   setQuoteText: (text: string) => void;
-  
-  bgType: 'avatar' | 'template' | 'snap';
-  setBgType: (type: 'avatar' | 'template' | 'snap') => void;
-  
-  selectedTemplate: { id: string; gradient: string } | null;
-  setSelectedTemplate: (template: { id: string; gradient: string } | null) => void;
-
-  // Rensar datan när publiceringen är klar
-  resetFlow: () => void;
+  setTargetAsUser: (id: string, username: string) => void;
+  setTargetAsEmail: (email: string) => void;
+  setTargetAsCustom: (name: string) => void;
+  reset: () => void;
 }
 
 export const useCreateQuoteStore = create<CreateQuoteState>((set) => ({
-  target: null,
-  setTarget: (target) => set({ target }),
+  mediaType: 'template',
+  template: null,
+  livePhotoUri: null,
   
   quoteText: '',
-  setQuoteText: (quoteText) => set({ quoteText }),
   
-  bgType: 'template',
-  setBgType: (bgType) => set({ bgType }),
+  targetType: null,
+  targetId: null,
+  targetUsername: null,
+  targetEmail: null,
+  customName: null,
   
-  selectedTemplate: null,
-  setSelectedTemplate: (selectedTemplate) => set({ selectedTemplate }),
+  setMediaAsTemplate: (template) => set({ mediaType: 'template', template, livePhotoUri: null }),
+  setMediaAsLivePhoto: (uri) => set({ mediaType: 'live_photo', livePhotoUri: uri, template: null }),
+  setQuoteText: (text) => set({ quoteText: text }),
   
-  resetFlow: () => set({ 
-    target: null, quoteText: '', bgType: 'template', selectedTemplate: null 
+  setTargetAsUser: (id, username) => set({ 
+    targetType: 'user', targetId: id, targetUsername: username, targetEmail: null, customName: null 
+  }),
+  setTargetAsEmail: (email) => set({ 
+    targetType: 'email', targetEmail: email, targetId: null, targetUsername: null, customName: null 
+  }),
+  setTargetAsCustom: (name) => set({ 
+    targetType: 'custom', customName: name, targetId: null, targetUsername: null, targetEmail: null 
+  }),
+  
+  reset: () => set({ 
+    mediaType: 'template', template: null, livePhotoUri: null, quoteText: '', 
+    targetType: null, targetId: null, targetUsername: null, targetEmail: null, customName: null 
   }),
 }));
