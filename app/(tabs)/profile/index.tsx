@@ -2,11 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, StyleSheet, Image, TouchableOpacity, 
-  SafeAreaView, ScrollView, ActivityIndicator, Alert
+  SafeAreaView, ScrollView, ActivityIndicator, Alert, Share as RNShare
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { 
-  ArrowLeft, Bell, Edit3, Share, Crown, LayoutTemplate, Settings, Heart 
+  Bell, Edit3, Share, Crown, LayoutTemplate, Settings, Heart 
 } from 'lucide-react-native';
 import NotificationBell from '../../../components/NotificationBell';
 import { supabase } from '../../../services/supabase';
@@ -33,19 +33,17 @@ export default function ProfileScreen() {
 
   const fetchUserProfile = async () => {
     try {
-      // 1. Get current authenticated user
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
       
       if (authError || !authUser) {
         throw new Error('Not authenticated');
       }
 
-      // 2. Fetch all profile data and counts concurrently for maximum performance
       const [
         { data: profile, error: profileError },
-        { count: followersCount, error: followersError },
-        { count: followingCount, error: followingError },
-        { count: favoritesCount, error: favoritesError }
+        { count: followersCount },
+        { count: followingCount },
+        { count: favoritesCount }
       ] = await Promise.all([
         supabase.from('profiles').select('id, username, avatar_url, bio').eq('id', authUser.id).single(),
         supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', authUser.id),
@@ -55,7 +53,6 @@ export default function ProfileScreen() {
 
       if (profileError) throw profileError;
 
-      // 3. Update the state with actual database counts
       if (profile) {
         setUser({
           id: profile.id,
@@ -65,7 +62,7 @@ export default function ProfileScreen() {
           following: followingCount || 0,
           followers: followersCount || 0,
           favorites: favoritesCount || 0,
-          isPro: true // Mocked until subscriptions are implemented
+          isPro: true 
         });
       }
 
@@ -74,6 +71,17 @@ export default function ProfileScreen() {
       Alert.alert('Error', 'Could not load profile data.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleShareProfile = async () => {
+    if (!user) return;
+    try {
+      await RNShare.share({
+        message: `Check out my quotes on PinQuote! 📌\nFollow me: @${user.username}\n\nDownload the app to see my PinQuotes!`,
+      });
+    } catch (error) {
+      console.error('Error sharing profile:', error);
     }
   };
 
@@ -106,12 +114,6 @@ export default function ProfileScreen() {
         {/* USER INFO SECTION */}
         <View style={styles.userInfoSection}>
           <View style={styles.avatarColumn}>
-            <View style={styles.usernameRow}>
-              <Text style={styles.username}>{user.username}</Text>
-              <TouchableOpacity>
-                <Edit3 size={16} color="#64748b" style={styles.editIcon} />
-              </TouchableOpacity>
-            </View>
             <View style={styles.avatarContainer}>
               {user.avatar_url ? (
                  <Image source={{ uri: user.avatar_url }} style={styles.avatar} />
@@ -122,25 +124,37 @@ export default function ProfileScreen() {
                     </Text>
                  </View>
               )}
-              <TouchableOpacity style={styles.shareBtn}>
-                <Share size={16} color="#000000" />
-              </TouchableOpacity>
             </View>
+            <Text style={styles.username}>{user.username}</Text>
           </View>
 
           <View style={styles.bioColumn}>
-            <View style={styles.bioHeader}>
-              <Text style={styles.bioLabel}>Bio</Text>
-              <TouchableOpacity>
-                <Edit3 size={16} color="#64748b" />
-              </TouchableOpacity>
-            </View>
+            <Text style={styles.bioLabel}>Bio</Text>
             <View style={styles.bioBox}>
               <Text style={styles.bioText}>
-                {user.bio || 'This user has not set a bio yet. Click the edit button to add one!'}
+                {user.bio || 'This user has not set a bio yet.'}
               </Text>
             </View>
           </View>
+        </View>
+
+        {/* ACTION BUTTONS */}
+        <View style={styles.actionButtonsRow}>
+          <TouchableOpacity 
+            style={styles.actionButton} 
+            onPress={() => router.push('/profile/edit')}
+          >
+            <Edit3 size={16} color="#0f172a" />
+            <Text style={styles.actionButtonText}>Edit Profile</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.actionButton} 
+            onPress={handleShareProfile}
+          >
+            <Share size={16} color="#0f172a" />
+            <Text style={styles.actionButtonText}>Share Profile</Text>
+          </TouchableOpacity>
         </View>
 
         {/* QUOTE GRIDS NAVIGATION */}
@@ -194,7 +208,6 @@ export default function ProfileScreen() {
               <Text style={styles.statPillText}>Favourites</Text>
               <View style={styles.favoriteRow}>
                 <Text style={styles.statPillNumber}>{user.favorites}</Text>
-                {/* Changed from Star to Heart with a nice red color */}
                 <Heart size={16} color="#ef4444" fill="#ef4444" />
               </View>
             </TouchableOpacity>
@@ -250,21 +263,22 @@ const styles = StyleSheet.create({
     color: '#0f172a' 
   },
 
-  userInfoSection: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 32, gap: 16 },
-  avatarColumn: { alignItems: 'center', flex: 1 },
-  usernameRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  username: { fontSize: 18, fontWeight: '800', color: '#1e293b' },
-  editIcon: { marginLeft: 6 },
+  userInfoSection: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, gap: 16 },
+  avatarColumn: { alignItems: 'center', flex: 1, gap: 8 },
+  username: { fontSize: 16, fontWeight: '800', color: '#1e293b', textAlign: 'center' },
   avatarContainer: { position: 'relative' },
   avatar: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#cbd5e1' },
   avatarPlaceholder: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#e2e8f0', justifyContent: 'center', alignItems: 'center' },
   avatarPlaceholderText: { fontSize: 32, fontWeight: '800', color: '#64748b' },
-  shareBtn: { position: 'absolute', bottom: -4, right: -4, backgroundColor: '#ffffff', padding: 8, borderRadius: 20, shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
+  
   bioColumn: { flex: 1.2 },
-  bioHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
-  bioLabel: { fontSize: 16, fontWeight: '800', color: '#1e293b' },
+  bioLabel: { fontSize: 16, fontWeight: '800', color: '#1e293b', marginBottom: 8 },
   bioBox: { backgroundColor: '#f1f5f9', padding: 12, borderRadius: 16, minHeight: 80 },
   bioText: { fontSize: 14, color: '#475569', lineHeight: 20, fontWeight: '500' },
+
+  actionButtonsRow: { flexDirection: 'row', gap: 12, marginBottom: 32 },
+  actionButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#e2e8f0', paddingVertical: 14, borderRadius: 16, gap: 8 },
+  actionButtonText: { fontSize: 15, fontWeight: '700', color: '#0f172a' },
 
   gridsSection: { flexDirection: 'row', justifyContent: 'space-between', gap: 16, marginBottom: 40 },
   gridBtn: { flex: 1, alignItems: 'center' },
