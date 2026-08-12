@@ -15,6 +15,9 @@ export type FeedQuote = {
 
 type Props = {
   quote: FeedQuote;
+  onReact?: (emoji: string, quoteId: string) => void;
+  onFavorite?: (quoteId: string) => void;
+  onOpenProfile?: (username: string) => void;
 };
 
 export default function QuoteCard({ quote }: Props) {

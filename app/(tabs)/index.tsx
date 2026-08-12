@@ -26,7 +26,7 @@ export default function FeedScreen() {
         .limit(10); // Start with 10 for MVP
 
       if (error) throw error;
-      if (data) setQuotes(data as FeedQuote[]);
+      if (data) setQuotes(data as unknown as FeedQuote[]);
     } catch (error) {
       console.error('Error fetching quotes:', error);
     } finally {

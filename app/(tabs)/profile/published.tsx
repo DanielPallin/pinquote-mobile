@@ -8,7 +8,7 @@ import {
   Text 
 } from 'react-native';
 import { supabase } from '../../../services/supabase';
-import { QuoteCard } from '../../../components/QuoteCard';
+import QuoteCard from '../../../components/QuoteCard';
 import { FeedQuote } from '../../../types/feed';
 
 const ITEMS_PER_PAGE = 5;

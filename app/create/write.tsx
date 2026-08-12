@@ -23,7 +23,7 @@ export default function WriteQuoteScreen() {
   const bgColor = isPhoto ? '#000000' : (template?.backgroundColor || '#000000');
 
   // Choose the wrapper component (Image or solid color)
-  const ContentWrapper = isPhoto ? ImageBackground : View;
+  const ContentWrapper: React.ComponentType<any> = isPhoto ? ImageBackground : View;
   const wrapperProps = isPhoto 
     ? { source: { uri: livePhotoUri! }, style: styles.wrapper } 
     : { style: [styles.wrapper, { backgroundColor: bgColor }] };

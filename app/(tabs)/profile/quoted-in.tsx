@@ -8,10 +8,10 @@ import {
   Text 
 } from 'react-native';
 import { supabase } from '../../../services/supabase';
-import { QuoteCard } from '../../../components/QuoteCard';
+import QuoteCard from '../../../components/QuoteCard';
 import { FeedQuote } from '../../../types/feed';
 
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 10;
 
 export default function PublishedQuotesScreen() {
   const [quotes, setQuotes] = useState<FeedQuote[]>([]);
