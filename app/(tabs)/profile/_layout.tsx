@@ -8,8 +8,8 @@ export default function ProfileLayout() {
       <Stack.Screen name="published" options={{ headerTitle: 'Published by You', headerBackTitle: 'Profile' }} />
       <Stack.Screen name="quoted-in" options={{ headerTitle: 'You were Quoted in', headerBackTitle: 'Profile' }} />
       <Stack.Screen name="settings" options={{ headerTitle: 'Account Settings' }} />
+      <Stack.Screen name="edit" options={{ headerTitle: 'Edit Profile', headerBackTitle: 'Profile' }} />
       
-      {/* New dynamic route for a single quote */}
       <Stack.Screen 
         name="quote/[id]" 
         options={{ 

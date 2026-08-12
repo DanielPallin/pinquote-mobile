@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, TextInput, StyleSheet, TouchableOpacity, 
-  Image, ActivityIndicator, Alert, KeyboardAvoidingView, Platform 
+  Image, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Camera } from 'lucide-react-native';
@@ -129,20 +129,17 @@ export default function EditProfileScreen() {
 
   const displayAvatar = newAvatarUri || avatarUrl;
 
-  return (
+ return (
     <KeyboardAvoidingView 
       style={styles.container} 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
-          <ArrowLeft size={24} color="#0f172a" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Profile</Text>
-        <View style={{ width: 40 }} />
-      </View>
 
-      <View style={styles.content}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Avatar Editor */}
         <View style={styles.avatarSection}>
           <TouchableOpacity style={styles.avatarWrapper} onPress={pickImage}>
@@ -190,7 +187,7 @@ export default function EditProfileScreen() {
           />
           <Text style={styles.charCount}>{bio.length}/160</Text>
         </View>
-      </View>
+      </ScrollView>
 
       <View style={styles.footer}>
         <TouchableOpacity 
@@ -212,9 +209,7 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
   centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24, paddingTop: 60, paddingBottom: 16 },
   iconButton: { padding: 8, marginLeft: -8 },
-  headerTitle: { fontSize: 20, fontWeight: '800', color: '#0f172a' },
   content: { padding: 24 },
   
   avatarSection: { alignItems: 'center', marginBottom: 32 },
@@ -231,7 +226,7 @@ const styles = StyleSheet.create({
   textArea: { height: 120, paddingTop: 16, textAlignVertical: 'top' },
   charCount: { textAlign: 'right', marginTop: 8, fontSize: 12, color: '#94a3b8', fontWeight: '600' },
 
-  footer: { padding: 2, paddingBottom: 200, marginTop: 'auto' },
+  footer: { padding: 12, paddingBottom: 120, marginTop: 'auto' },
   saveButton: { backgroundColor: '#0f172a', paddingVertical: 18, borderRadius: 20, alignItems: 'center' },
   saveButtonDisabled: { opacity: 0.7 },
   saveButtonText: { color: '#ffffff', fontSize: 18, fontWeight: '700' },
