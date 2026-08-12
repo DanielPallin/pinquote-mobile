@@ -1,60 +1,39 @@
-// app/(tabs)/_layout.tsx
 import React from 'react';
-import { Tabs, useRouter } from 'expo-router';
-import { TouchableOpacity, StyleSheet } from 'react-native';
-import { Home, PlusSquare, User } from 'lucide-react-native';
+import { Tabs } from 'expo-router';
+import { Home, User } from 'lucide-react-native';
 
 export default function TabLayout() {
-  const router = useRouter();
-
   return (
     <Tabs 
       screenOptions={{ 
-        headerShown: false, 
-        tabBarShowLabel: false,
-        tabBarStyle: styles.tabBar,
+        tabBarActiveTintColor: '#0f172a',
+        tabBarInactiveTintColor: '#94a3b8',
+        headerShown: false, // This removes the ugly "index" header at the top
+        tabBarStyle: {
+          borderTopWidth: 1,
+          borderTopColor: '#f1f5f9',
+          elevation: 0,
+          shadowOpacity: 0,
+        }
       }}
     >
-      {/* 1. HOME (Feed) */}
-      <Tabs.Screen 
-        name="index" 
-        options={{ 
-          tabBarIcon: ({ color }) => <Home color={color} size={28} /> 
-        }} 
-      />
-      
-      {/* 2. THE PLUS BUTTON (Intercepted) */}
-      <Tabs.Screen 
-        name="create-placeholder" 
+      {/* Feed Tab */}
+      <Tabs.Screen
+        name="index"
         options={{
-          tabBarIcon: ({ color }) => <PlusSquare color={color} size={28} />,
-          // Vi skriver över standardknappen för att "kapa" klicket
-          tabBarButton: (props) => (
-            <TouchableOpacity 
-              {...props} 
-              onPress={() => router.push('../create')}
-            />
-          )
-        }} 
+          title: 'Feed',
+          tabBarIcon: ({ color }) => <Home size={24} color={color} />,
+        }}
       />
       
-      {/* 3. PROFILE */}
-      <Tabs.Screen 
-        name="profile" 
-        options={{ 
-          tabBarIcon: ({ color }) => <User color={color} size={28} /> 
-        }} 
+      {/* Profile Tab */}
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color }) => <User size={24} color={color} />,
+        }}
       />
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  tabBar: {
-    backgroundColor: '#ffffff',
-    borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
-    height: 80, // Extra höjd för att hantera iOS "home indicator"
-    paddingTop: 12,
-  }
-});

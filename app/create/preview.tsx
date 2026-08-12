@@ -4,11 +4,11 @@ import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ActivityIndicat
 import { useRouter } from 'expo-router';
 import { ArrowLeft, CheckCircle2 } from 'lucide-react-native';
 import { supabase } from '../../services/supabase';
-import { useCreateQuoteStore } from '../../src/store/useCreateQuoteStore';
+import { useCreateQuoteStore } from '../../store/useCreateQuoteStore';
 
 // Vi kan återanvända QuoteCard från tidigare konversation för att rendera förhandsgranskningen,
 // jag lägger in en platshållare här för presentationen.
-import { QuoteCard } from '../../components/ui/QuoteCard'; 
+import { QuoteCard } from '../../components/QuoteCard'; 
 
 export default function PreviewScreen() {
   const router = useRouter();
@@ -38,7 +38,7 @@ export default function PreviewScreen() {
 
       // 2. Rensa store och gå till Feed
       store.resetFlow();
-      router.replace('/(tabs)/'); // Replace istället för push så man inte kan backa till skapandet
+      router.replace('/(tabs)/index'); // Replace istället för push så man inte kan backa till skapandet
       
     } catch (err) {
       console.error("Failed to publish:", err);

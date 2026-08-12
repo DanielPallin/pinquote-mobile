@@ -7,7 +7,7 @@ import {
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Loader2 } from 'lucide-react-native';
 import { supabase } from '../../services/supabase';
-import { useCreateQuoteStore } from '../../src/store/useCreateQuoteStore';
+import { useCreateQuoteStore } from '../../store/useCreateQuoteStore';
 
 type Profile = { id: string; username: string; avatar_url: string | null };
 
