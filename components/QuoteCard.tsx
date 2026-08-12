@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ImageBackground } from 'react-native';
 import { Heart, MessageCircle, SmilePlus } from 'lucide-react-native';
 import { TEMPLATES } from '../constants/templates';
 import { FeedQuote } from '../types/feed';
@@ -12,7 +12,6 @@ type Props = {
   onPressComments?: (quoteId: string) => void;
 };
 
-// Expanded list of premium emojis
 const QUICK_EMOJIS = ['😂', '🔥', '❤️', '💀', '💯', '🙏', '👀', '✨', '😢', '😍'];
 
 export default function QuoteCard({ quote, onReact, onFavorite, onOpenProfile, onPressComments }: Props) {
@@ -22,10 +21,31 @@ export default function QuoteCard({ quote, onReact, onFavorite, onOpenProfile, o
   const authorName = quote.quoted_user?.username || quote.custom_author_name || 'Unknown';
   const publisherName = quote.publisher?.username || 'Someone';
 
+  const isPhoto = !!quote.live_photo_url;
+  const bgColor = isPhoto ? '#000000' : template.backgroundColor;
+  const textColor = isPhoto ? '#ffffff' : template.textColor;
+
   const handleReactionPress = (emoji: string) => {
     onReact?.(emoji, quote.id);
     setShowEmojiPicker(false);
   };
+
+  const CardContent = () => (
+    <>
+      {isPhoto && <View style={styles.overlay} />}
+      <Text style={[styles.quoteMark, { color: textColor }]}>“ ”</Text>
+      <Text style={[styles.content, { color: textColor }, isPhoto && styles.photoTextShadow]}>
+        {quote.content}
+      </Text>
+      
+      <View style={styles.authorContainer}>
+        <View style={[styles.divider, { backgroundColor: textColor }]} />
+        <Text style={[styles.authorText, { color: textColor }, isPhoto && styles.photoTextShadow]}>
+          -{authorName}
+        </Text>
+      </View>
+    </>
+  );
 
   return (
     <View style={styles.container}>
@@ -33,19 +53,18 @@ export default function QuoteCard({ quote, onReact, onFavorite, onOpenProfile, o
         <Text style={styles.boldText} onPress={() => onOpenProfile?.(authorName)}>{authorName}</Text> has been quoted by <Text style={styles.boldText} onPress={() => publisherName !== 'Someone' && onOpenProfile?.(publisherName)}>{publisherName}</Text>
       </Text>
 
-      <View style={[styles.card, { backgroundColor: template.backgroundColor }]}>
-        <Text style={[styles.quoteMark, { color: template.textColor }]}>“ ”</Text>
-        <Text style={[styles.content, { color: template.textColor }]}>
-          {quote.content}
-        </Text>
-        
-        <View style={styles.authorContainer}>
-          <View style={[styles.divider, { backgroundColor: template.textColor }]} />
-          <Text style={[styles.authorText, { color: template.textColor }]}>
-            -{authorName}
-          </Text>
+      {isPhoto ? (
+        <ImageBackground 
+          source={{ uri: quote.live_photo_url as string }} 
+          style={[styles.card, { overflow: 'hidden' }]}
+        >
+          <CardContent />
+        </ImageBackground>
+      ) : (
+        <View style={[styles.card, { backgroundColor: bgColor }]}>
+          <CardContent />
         </View>
-      </View>
+      )}
 
       {/* Action Bar */}
       <View style={styles.actionBar}>
@@ -81,7 +100,6 @@ export default function QuoteCard({ quote, onReact, onFavorite, onOpenProfile, o
             </TouchableOpacity>
           ))}
 
-          {/* Reaction Button & Popover Wrapper */}
           <View style={styles.addReactionContainer}>
             <TouchableOpacity 
               style={styles.addReactionButton} 
@@ -90,7 +108,6 @@ export default function QuoteCard({ quote, onReact, onFavorite, onOpenProfile, o
               <SmilePlus size={20} color="#64748b" />
             </TouchableOpacity>
 
-            {/* Quick Emoji Picker Popover */}
             {showEmojiPicker && (
               <View style={styles.emojiPopover}>
                 <ScrollView 
@@ -122,14 +139,14 @@ const styles = StyleSheet.create({
   container: { marginBottom: 32, paddingHorizontal: 16 },
   contextText: { textAlign: 'center', color: '#64748b', fontSize: 14, marginBottom: 12 },
   boldText: { fontWeight: '700', color: '#0f172a' },
-  card: { borderRadius: 32, padding: 32, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 15, elevation: 8 },
+  card: { borderRadius: 32, padding: 32, alignItems: 'center', shadowColor: '#000000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 15, elevation: 8 },
+  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.35)' },
   quoteMark: { fontSize: 64, fontWeight: '900', lineHeight: 64, marginBottom: -10, opacity: 0.3 },
   content: { fontSize: 28, fontWeight: '800', textAlign: 'center', marginBottom: 24 },
+  photoTextShadow: { textShadowColor: 'rgba(0, 0, 0, 0.9)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 10 },
   authorContainer: { alignItems: 'center', width: '100%' },
   divider: { width: 40, height: 3, borderRadius: 2, marginBottom: 8 },
   authorText: { fontSize: 18, fontWeight: '700' },
-  
-  // Action Bar Styles
   actionBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, paddingHorizontal: 8 },
   leftActions: { flexDirection: 'row', gap: 16 },
   actionButton: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -140,34 +157,10 @@ const styles = StyleSheet.create({
   reactionEmoji: { fontSize: 14 },
   reactionCount: { fontSize: 13, fontWeight: '700', color: '#64748b' },
   reactionCountActive: { color: '#059669' },
-  
-  // Emoji Picker Styles
   addReactionContainer: { position: 'relative', zIndex: 10 },
   addReactionButton: { padding: 6 },
-  emojiPopover: { 
-    position: 'absolute', 
-    bottom: 40, 
-    right: 0, 
-    backgroundColor: '#fff', 
-    borderRadius: 30, 
-    shadowColor: '#000', 
-    shadowOffset: { width: 0, height: 8 }, 
-    shadowOpacity: 0.15, 
-    shadowRadius: 16, 
-    elevation: 10, 
-    width: 240, // Fixed width prevents border clipping
-    paddingVertical: 10,
-  },
-  emojiScrollContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    gap: 16, // Spacing between emojis in the scroll view
-  },
-  emojiButton: {
-    padding: 2,
-  },
-  quickEmoji: { 
-    fontSize: 28 
-  },
+  emojiPopover: { position: 'absolute', bottom: 40, right: 0, backgroundColor: '#ffffff', borderRadius: 30, shadowColor: '#000000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 16, elevation: 10, width: 240, paddingVertical: 10 },
+  emojiScrollContent: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, gap: 16 },
+  emojiButton: { padding: 2 },
+  quickEmoji: { fontSize: 28 },
 });

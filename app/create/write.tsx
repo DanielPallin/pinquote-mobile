@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { 
   View, TextInput, StyleSheet, TouchableOpacity, Text, 
   KeyboardAvoidingView, Platform, ImageBackground 
@@ -11,18 +11,21 @@ export default function WriteQuoteScreen() {
   const router = useRouter();
   const { mediaType, template, livePhotoUri, quoteText, setQuoteText } = useCreateQuoteStore();
 
-  // Safety check: if they somehow get here with no selection, kick them back
+  // Safety check handled inside useEffect to avoid rendering state updates
+  useEffect(() => {
+    if (!template && !livePhotoUri) {
+      router.back();
+    }
+  }, [template, livePhotoUri]);
+
   if (!template && !livePhotoUri) {
-    router.back();
-    return null;
+    return <View style={styles.container} />;
   }
 
-  // Set colors dynamically based on if it's a photo or a template
   const isPhoto = mediaType === 'live_photo';
   const textColor = isPhoto ? '#ffffff' : (template?.textColor || '#ffffff');
   const bgColor = isPhoto ? '#000000' : (template?.backgroundColor || '#000000');
 
-  // Choose the wrapper component (Image or solid color)
   const ContentWrapper: React.ComponentType<any> = isPhoto ? ImageBackground : View;
   const wrapperProps = isPhoto 
     ? { source: { uri: livePhotoUri! }, style: styles.wrapper } 
@@ -34,7 +37,6 @@ export default function WriteQuoteScreen() {
       style={styles.container}
     >
       <ContentWrapper {...wrapperProps}>
-        {/* Dark overlay specifically for live photos to make text pop */}
         {isPhoto && <View style={styles.overlay} />}
 
         <View style={styles.header}>
@@ -59,7 +61,7 @@ export default function WriteQuoteScreen() {
             style={[
               styles.input, 
               { color: textColor },
-              isPhoto && styles.photoTextShadow // Applies the shadow only if it's a photo!
+              isPhoto && styles.photoTextShadow
             ]}
             placeholder="Enter Quote..."
             placeholderTextColor={isPhoto ? 'rgba(255,255,255,0.7)' : `${textColor}80`}

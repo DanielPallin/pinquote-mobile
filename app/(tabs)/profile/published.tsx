@@ -10,6 +10,7 @@ import {
 import { supabase } from '../../../services/supabase';
 import QuoteCard from '../../../components/QuoteCard';
 import { FeedQuote } from '../../../types/feed';
+import NotificationBell from '../../../components/NotificationBell';
 
 const ITEMS_PER_PAGE = 5;
 
@@ -109,6 +110,12 @@ export default function PublishedQuotesScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Header with Title and Notification Bell */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Published Quotes</Text>
+        <NotificationBell />
+      </View>
+
       <FlatList
         data={quotes}
         keyExtractor={(item) => item.id}
@@ -140,6 +147,20 @@ export default function PublishedQuotesScreen() {
 }
 
 const styles = StyleSheet.create({
+  header: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    paddingHorizontal: 24, 
+    paddingBottom: 16,
+    backgroundColor: '#f8fafc',
+    zIndex: 10,
+  },
+  headerTitle: { 
+    fontSize: 28, 
+    fontWeight: '900', 
+    color: '#0f172a' 
+  },
   container: {
     flex: 1,
     backgroundColor: '#f8fafc',

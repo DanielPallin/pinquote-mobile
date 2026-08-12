@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router';
 import { 
   ArrowLeft, Bell, Edit3, Share, Crown, LayoutTemplate, Settings, Star 
 } from 'lucide-react-native';
+import NotificationBell from '../../../components/NotificationBell';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -25,17 +26,10 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.container}>
       {/* HEADER */}
+
       <View style={styles.header}>
-        <TouchableOpacity style={styles.iconButton}>
-          <ArrowLeft size={24} color="#1e293b" />
-        </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>PinQuo</Text>
-          <Text style={styles.headerSubtitle}>Profile</Text>
-        </View>
-        <TouchableOpacity style={styles.iconButton}>
-          <Bell size={24} color="#1e293b" />
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>PinQuote</Text>
+        <NotificationBell />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -162,11 +156,20 @@ const styles = StyleSheet.create({
   scrollContent: { padding: 20, paddingBottom: 40 },
   
   // Header
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, backgroundColor: '#f8fafc' },
-  iconButton: { padding: 8 },
-  headerTitleContainer: { alignItems: 'center' },
-  headerTitle: { fontSize: 24, fontWeight: '900', color: '#0f172a' },
-  headerSubtitle: { fontSize: 14, fontWeight: '600', color: '#64748b' },
+  header: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    paddingHorizontal: 24, 
+    paddingBottom: 16,
+    backgroundColor: '#f8fafc',
+    zIndex: 10,
+  },
+  headerTitle: { 
+    fontSize: 28, 
+    fontWeight: '900', 
+    color: '#0f172a' 
+  },
 
   // User Info
   userInfoSection: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 32, gap: 16 },
@@ -177,7 +180,6 @@ const styles = StyleSheet.create({
   avatarContainer: { position: 'relative' },
   avatar: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#cbd5e1' },
   shareBtn: { position: 'absolute', bottom: -4, right: -4, backgroundColor: '#fff', padding: 8, borderRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
-  
   bioColumn: { flex: 1.2 },
   bioHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
   bioLabel: { fontSize: 16, fontWeight: '800', color: '#1e293b' },

@@ -1,32 +1,18 @@
-// app/_layout.tsx
 import React from 'react';
 import { Stack } from 'expo-router';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
 
 export default function RootLayout() {
   return (
-    <>
-      <StatusBar style="dark" />
-      
-      <Stack>
-        {/* Main Tab Navigation */}
-        <Stack.Screen 
-          name="(tabs)" 
-          options={{ 
-            headerShown: false 
-          }} 
-        />
-        
-        {/* Create Flow (Modal) */}
-        <Stack.Screen 
-          name="create" 
-          options={{ 
-            presentation: 'modal',
-            headerShown: false,
-            gestureEnabled: true, 
-          }} 
-        />
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      {/* Forces the mobile status bar to use dark icons/text globally */}
+      <StatusBar style="dark" /> 
+
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="create" options={{ presentation: 'modal' }} />
       </Stack>
-    </>
+    </GestureHandlerRootView>
   );
 }
