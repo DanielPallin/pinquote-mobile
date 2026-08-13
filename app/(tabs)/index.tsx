@@ -1,8 +1,9 @@
+// (tabs)/index.tsx (FEED SCREEN)
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, StyleSheet, FlatList, ActivityIndicator, RefreshControl, Text, TouchableOpacity } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import BottomSheet, { BottomSheetBackdrop, BottomSheetFlatList, BottomSheetTextInput } from '@gorhom/bottom-sheet';
-import { Send, X } from 'lucide-react-native';
+import { Send, Search, X } from 'lucide-react-native';
 import { supabase } from '../../services/supabase';
 import QuoteCard from '../../components/QuoteCard';
 import { FeedQuote, GroupedReaction } from '../../types/feed';
@@ -23,6 +24,7 @@ const ITEMS_PER_PAGE = 10;
 
 export default function FeedScreen() {
   const [quotes, setQuotes] = useState<FeedQuote[]>([]);
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -295,9 +297,18 @@ export default function FeedScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>PinQuote</Text>
+      <Text style={styles.headerTitle}>PinQuote</Text>
+      <View style={styles.headerIcons}>
+        <TouchableOpacity 
+          onPress={() => router.push('/search')} 
+          style={styles.searchIconBtn}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Search size={24} color="#0f172a" />
+        </TouchableOpacity>
         <NotificationBell />
       </View>
+    </View>
 
       <FlatList
         data={quotes}
@@ -420,6 +431,13 @@ const styles = StyleSheet.create({
   sheetContainer: { flex: 1, backgroundColor: '#ffffff' },
   sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
   sheetTitle: { fontSize: 18, fontWeight: '800', color: '#0f172a' },
+  headerIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  searchIconBtn: {
+  },
   commentsList: { padding: 20, paddingBottom: 40 },
   commentRow: { flexDirection: 'row', marginBottom: 16, alignItems: 'flex-start' },
   commentAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#e2e8f0', justifyContent: 'center', alignItems: 'center', marginRight: 12 },

@@ -36,8 +36,6 @@ export function useFeed(currentUserId: string | null) {
 
       if (error) throw error;
 
-      // Note: Implementation of formatQuote goes here to parse raw data
-      // const formattedData = data.map(q => formatQuote(q, currentUserId));
       const formattedData = data as unknown as FeedQuote[]; // Placeholder
 
       if (formattedData.length < ITEMS_PER_PAGE) {

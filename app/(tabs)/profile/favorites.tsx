@@ -10,7 +10,6 @@ import { supabase } from '../../../services/supabase';
 const { width } = Dimensions.get('window');
 const PADDING_HORIZONTAL = 16;
 const GAP = 8;
-// Screen width minus side paddings (32) minus two gaps (16) divided by 3 columns
 const CELL_SIZE = (width - (PADDING_HORIZONTAL * 2) - (GAP * 2)) / 3;
 
 interface StyleConfig {

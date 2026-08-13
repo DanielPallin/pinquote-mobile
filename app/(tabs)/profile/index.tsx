@@ -68,7 +68,6 @@ export default function ProfileScreen() {
         supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', authUser.id),
         supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', authUser.id),
         supabase.from('favorites').select('*', { count: 'exact', head: true }).eq('user_id', authUser.id),
-        // Hämta templates och live_photo
         supabase.from('quotes').select('id, content, live_photo_url, template:templates(style_config)').eq('publisher_id', authUser.id).order('created_at', { ascending: false }).limit(4),
         supabase.from('quotes').select('id, content, live_photo_url, template:templates(style_config)').eq('quoted_user_id', authUser.id).order('created_at', { ascending: false }).limit(4)
       ]);
@@ -114,7 +113,6 @@ export default function ProfileScreen() {
     return (
       <View style={styles.previewGrid}>
         {quotes.map(q => {
-          // Extrahera stilar dynamiskt
           const styleConfig = q.template?.style_config || {};
           const bgColor = styleConfig.backgroundColor || '#ffffff';
           const textColor = styleConfig.textColor || '#334155';
@@ -303,7 +301,6 @@ const styles = StyleSheet.create({
   gridBoxWrapper: { width: '100%', aspectRatio: 1, backgroundColor: '#f1f5f9', borderRadius: 24, padding: 8, borderWidth: 4, borderColor: '#bbf7d0' },
   previewGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, width: '100%', height: '100%', justifyContent: 'space-between', alignContent: 'space-between' },
   
-  // Real minicards
   miniCard: { width: '47%', height: '47%', borderRadius: 12, padding: 4, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1, overflow: 'hidden', position: 'relative' },
   emptyMiniCard: { backgroundColor: '#e2e8f0', borderWidth: 0, shadowOpacity: 0, elevation: 0 },
   miniCardText: { fontSize: 8, textAlign: 'center', fontWeight: '800', lineHeight: 11, zIndex: 2 },

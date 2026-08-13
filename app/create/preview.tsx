@@ -1,3 +1,4 @@
+// app/create/preview.tsx
 import React, { useState } from 'react';
 import { 
   View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, ImageBackground
@@ -32,7 +33,7 @@ export default function PreviewQuoteScreen() {
 
       let finalLivePhotoUrl = null;
 
-      // 1. Upload Live Photo to Supabase Storage if applicable
+      // Upload Live Photo to Supabase Storage
       if (mediaType === 'live_photo' && livePhotoUri) {
         const base64 = await FileSystem.readAsStringAsync(livePhotoUri, { encoding: 'base64' });
         const fileName = `${user.id}/${Date.now()}.jpg`;
@@ -50,7 +51,7 @@ export default function PreviewQuoteScreen() {
         finalLivePhotoUrl = publicUrlData.publicUrl;
       }
       
-      // 2. Insert into the quotes database and return the inserted row
+      // Insert into the quotes database and return the inserted row
       const { data: newQuote, error: quoteError } = await supabase
         .from('quotes')
         .insert({
@@ -67,9 +68,9 @@ export default function PreviewQuoteScreen() {
 
       if (quoteError) throw quoteError;
 
-      // 3. Handle "Someone Quoted Me" Notification
+      // "Someone Quoted Me" Notification
       if (targetType === 'user' && targetId && newQuote) {
-        // Check if the target user wants quote notifications
+      // Check if the target user wants quote notifications
         const { data: targetProfile } = await supabase
           .from('profiles')
           .select('notify_quotes')
@@ -86,7 +87,7 @@ export default function PreviewQuoteScreen() {
         }
       }
 
-      // 4. Update User Template Interactions for smart sorting
+      // Update User Template Interactions for smart sorting
       if (mediaType === 'template' && template?.id) {
         const { data: existingInteraction } = await supabase
           .from('user_template_interactions')

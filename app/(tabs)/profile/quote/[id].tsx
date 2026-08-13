@@ -1,3 +1,4 @@
+// (tabs)/profile/quote/[id].tsx
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
@@ -72,7 +73,7 @@ export default function SingleQuoteScreen() {
     }
   };
 
-  // Basic handlers to prevent crashes when interacting in the single view
+  // Handlers to prevent crashes when interacting in the single view
   const handleFavorite = (quoteId: string) => {
     console.log('Toggle favorite on single quote', quoteId);
   };

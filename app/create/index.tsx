@@ -1,3 +1,4 @@
+// app/(tabs)/create/index.tsx
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator 
@@ -8,7 +9,6 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { supabase } from '../../services/supabase';
 import { useCreateQuoteStore, QuoteTemplate } from '../../store/useCreateQuoteStore';
 
-// Extend the local template type to include our new sorting fields
 interface ExtendedTemplate extends QuoteTemplate {
   category: string;
   isFavorite: boolean;
@@ -33,14 +33,14 @@ export default function SelectTemplateScreen() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
 
-      // 1. Fetch all templates from DB
+      // Fetch all templates from DB
       const { data: templatesData, error: templatesError } = await supabase
         .from('templates')
         .select('*');
 
       if (templatesError) throw templatesError;
 
-      // 2. Fetch current user's interactions (favorites, use counts)
+      // Fetch current user's interactions (favorites, use counts)
       let interactionsData: any[] = [];
       if (user) {
         const { data: interactions, error: interactionsError } = await supabase
@@ -53,7 +53,7 @@ export default function SelectTemplateScreen() {
         }
       }
 
-      // 3. Map the data and fix the color properties from style_config
+      // Map the data and fix the color properties from style_config
       const formattedTemplates: ExtendedTemplate[] = templatesData.map((t: any) => {
         const interaction = interactionsData.find(i => i.template_id === t.id);
         
@@ -66,14 +66,14 @@ export default function SelectTemplateScreen() {
           name: t.name,
           backgroundColor: bgColor,
           textColor: txtColor,
-          isPro: t.is_pro_only, // Matched against the DB column name
+          isPro: t.is_pro_only,
           category: t.category || 'General',
           isFavorite: interaction?.is_favorite || false,
           lastUsedAt: interaction?.last_used_at || null,
         };
       });
 
-      // 4. Implement the Smart Sorting Logic
+      // Implement the Smart Sorting Logic
       formattedTemplates.sort((a, b) => {
         // Priority 1: Last used first
         const timeA = a.lastUsedAt ? new Date(a.lastUsedAt).getTime() : 0;
@@ -108,8 +108,7 @@ export default function SelectTemplateScreen() {
       return;
     }
     
-    // We pass it to the store. You will need to update `use_count` and `last_used_at` 
-    // in Supabase when the user actually PUBLISHES the quote!
+    // We pass it to the store. Remember to update `use_count` and `last_used_at` 
     setMediaAsTemplate(template);
     router.push('/create/write');
   };
@@ -236,9 +235,9 @@ const styles = StyleSheet.create({
     aspectRatio: 0.8, 
     marginHorizontal: 8, 
     borderRadius: 20, 
-    padding: 12, // Lite mindre padding så badge får plats bra
-    justifyContent: 'flex-start', // Flyttar innehållet till toppen 
-    alignItems: 'flex-start', // Justerar till vänster
+    padding: 12,
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
     shadowColor: '#000000', 
     shadowOffset: { width: 0, height: 4 }, 
     shadowOpacity: 0.1, 

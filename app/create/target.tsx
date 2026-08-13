@@ -1,3 +1,4 @@
+// app/create/target.tsx
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, TextInput, StyleSheet, FlatList, TouchableOpacity, KeyboardAvoidingView, Platform 
@@ -87,7 +88,7 @@ export default function TargetScreen() {
         </View>
 
         <View style={styles.resultsContainer}>
-          {/* 1. Databas-användare */}
+          {/* DB user */}
           {results.map((item) => (
             <TouchableOpacity key={item.id} style={styles.resultRow} onPress={() => handleSelectUser(item)}>
               <View style={styles.avatarPlaceholder}><User size={20} color="#64748b" /></View>
@@ -98,7 +99,7 @@ export default function TargetScreen() {
             </TouchableOpacity>
           ))}
 
-          {/* 2. E-postinbjudan */}
+          {/* E-mail invite */}
           {isEmail && (
             <TouchableOpacity style={styles.resultRow} onPress={handleInviteEmail}>
               <View style={[styles.avatarPlaceholder, { backgroundColor: '#dcfce3' }]}>

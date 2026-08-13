@@ -53,7 +53,6 @@ export default function NotificationBell() {
       if (error) throw error;
 
       if (data) {
-        // Supabase joins can return arrays or objects, we cast safely
         const formatted = data.map((n: any) => ({
           ...n,
           actor: Array.isArray(n.actor) ? n.actor[0] : n.actor
@@ -74,7 +73,7 @@ export default function NotificationBell() {
 
   const handleOpenDropdown = () => {
     setIsOpen(true);
-    fetchNotifications(); // Refresh when opening
+    fetchNotifications();
   };
 
   const handleCloseDropdown = () => {
@@ -101,7 +100,7 @@ export default function NotificationBell() {
   };
 
   const handleNotificationPress = async (notification: Notification) => {
-    // 1. Mark this specific notification as read if it isn't already
+    // Mark this specific notification as read if it isn't already
     if (!notification.is_read) {
       setNotifications(prev => prev.map(n => 
         n.id === notification.id ? { ...n, is_read: true } : n
@@ -114,16 +113,12 @@ export default function NotificationBell() {
         .eq('id', notification.id);
     }
 
-    // 2. Close modal and Navigate based on type
+    // Close modal and Navigate based on type
     setIsOpen(false);
     
     if (notification.type === 'follow') {
-      // Assuming you have a user profile route like /user/[id]
-      // router.push(`/user/${notification.actor.id}`);
       console.log('Navigate to user:', notification.actor.id);
     } else if (notification.quote_id) {
-      // Navigate to the specific quote or feed
-      // router.push(`/quote/${notification.quote_id}`);
       console.log('Navigate to quote:', notification.quote_id);
     }
   };
@@ -253,7 +248,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.2)',
     justifyContent: 'flex-start',
     alignItems: 'flex-end',
-    paddingTop: 100, // Adjust this depending on your header height
+    paddingTop: 100,
     paddingRight: 16,
   },
   dropdownContainer: {
@@ -308,7 +303,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f8fafc',
   },
   unreadItem: {
-    backgroundColor: '#f0f9ff', // Light blue tint for unread
+    backgroundColor: '#f0f9ff',
   },
   avatarContainer: {
     position: 'relative',

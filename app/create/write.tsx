@@ -1,3 +1,4 @@
+// app/create/write.tsx
 import React, { useEffect } from 'react';
 import { 
   View, TextInput, StyleSheet, TouchableOpacity, Text, 

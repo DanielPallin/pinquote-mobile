@@ -1,5 +1,4 @@
 // types/feed.ts
-
 export interface UserProfile {
   id: string;
   username: string;
@@ -26,7 +25,6 @@ export interface FeedQuote {
   quoted_email: string | null;
   custom_author_name: string | null;
   
-  // Added these to fix the TypeScript mismatch
   template_id: string | null;
   live_photo_url?: string | null; 
   

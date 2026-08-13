@@ -16,7 +16,7 @@ export default function SettingsScreen() {
   // Notification states
   const [notifyComments, setNotifyComments] = useState(true);
   const [notifyReactions, setNotifyReactions] = useState(true);
-  const [notifyFollowers, setNotifyFollowers] = useState(true); // Uppdaterat namn
+  const [notifyFollowers, setNotifyFollowers] = useState(true);
 
   useEffect(() => {
     fetchSettings();
@@ -28,7 +28,6 @@ export default function SettingsScreen() {
       if (!user) return;
       setUserId(user.id);
 
-      // Ändrat notify_follows till notify_followers
       const { data, error } = await supabase
         .from('profiles')
         .select('notify_comments, notify_reactions, notify_followers') 
@@ -40,7 +39,7 @@ export default function SettingsScreen() {
       if (data) {
         setNotifyComments(data.notify_comments ?? true);
         setNotifyReactions(data.notify_reactions ?? true);
-        setNotifyFollowers(data.notify_followers ?? true); // Uppdaterat namn
+        setNotifyFollowers(data.notify_followers ?? true);
       }
     } catch (error) {
       console.error('Error fetching settings:', error);
@@ -52,10 +51,9 @@ export default function SettingsScreen() {
   const toggleSwitch = async (field: string, value: boolean) => {
     if (!userId) return;
     
-    // Optimistic UI update
     if (field === 'notify_comments') setNotifyComments(value);
     if (field === 'notify_reactions') setNotifyReactions(value);
-    if (field === 'notify_followers') setNotifyFollowers(value); // Uppdaterat namn
+    if (field === 'notify_followers') setNotifyFollowers(value);
 
     // Database update
     const { error } = await supabase
@@ -65,10 +63,9 @@ export default function SettingsScreen() {
 
     if (error) {
       Alert.alert('Error', 'Failed to update setting.');
-      // Revert if error
       if (field === 'notify_comments') setNotifyComments(!value);
       if (field === 'notify_reactions') setNotifyReactions(!value);
-      if (field === 'notify_followers') setNotifyFollowers(!value); // Uppdaterat namn
+      if (field === 'notify_followers') setNotifyFollowers(!value);
     }
   };
 
@@ -163,8 +160,8 @@ export default function SettingsScreen() {
               <Text style={styles.settingDescription}>When someone starts following you</Text>
             </View>
             <Switch 
-              value={notifyFollowers} // Uppdaterat referens
-              onValueChange={(val) => toggleSwitch('notify_followers', val)} // Uppdaterat parameter
+              value={notifyFollowers}
+              onValueChange={(val) => toggleSwitch('notify_followers', val)}
               trackColor={{ false: '#e2e8f0', true: '#10b981' }}
               thumbColor={Platform.OS === 'ios' ? '#ffffff' : (notifyFollowers ? '#ffffff' : '#f8fafc')}
             />

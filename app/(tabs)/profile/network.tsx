@@ -1,3 +1,4 @@
+// app/(tabs)/profile/network.tsx
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, StyleSheet, FlatList, TouchableOpacity, 
@@ -12,7 +13,6 @@ interface NetworkUser {
   id: string;
   username: string;
   avatar_url: string | null;
-  // We can add an isFollowing flag later when we implement follow/unfollow logic
 }
 
 export default function NetworkScreen() {
@@ -53,7 +53,6 @@ export default function NetworkScreen() {
         setUsers(formatted);
 
       } else {
-        // Get users that follow the current user
         const { data, error } = await supabase
           .from('follows')
           .select(`
@@ -132,7 +131,6 @@ export default function NetworkScreen() {
               )}
               <Text style={styles.username}>{item.username}</Text>
               
-              {/* Future implementation: Real Follow/Unfollow button */}
               <TouchableOpacity style={styles.followButton}>
                 <Text style={styles.followButtonText}>
                   {activeTab === 'following' ? 'Following' : 'Follow'}

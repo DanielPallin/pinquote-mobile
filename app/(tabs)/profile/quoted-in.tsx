@@ -52,8 +52,7 @@ export default function PublishedQuotesScreen() {
 
       if (error) throw error;
 
-      // NOTE: Parse data through your formatQuote function here
-      const formattedData = data as unknown as FeedQuote[]; // Placeholder cast
+      const formattedData = data as unknown as FeedQuote[];
 
       if (formattedData.length < ITEMS_PER_PAGE) {
         setHasMore(false);
@@ -81,7 +80,6 @@ export default function PublishedQuotesScreen() {
     }
   };
 
-  // Optimistic UI updates for the list
   const handleReaction = (emoji: string, quoteId: string) => {
     console.log(`Reacted with ${emoji} on ${quoteId}`);
   };

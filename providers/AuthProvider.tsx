@@ -14,13 +14,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Fetch initial session from AsyncStorage
+    // Fetch initial session from AsyncStorage
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setIsLoading(false);
     });
 
-    // 2. Listen for authentication changes (login, logout, token refresh)
+    // Listen for authentication changes (login, logout, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });

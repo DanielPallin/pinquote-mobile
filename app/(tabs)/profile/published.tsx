@@ -88,26 +88,22 @@ export default function PublishedQuotesScreen() {
           style: "destructive", 
           onPress: async () => {
             try {
-              // 1. Find the quote to see if it has an image
+              // Find the quote to see if it has an image
               const quoteToDelete = quotes.find(q => q.id === quoteId);
               
-              // Optimistic UI update
               setQuotes(prev => prev.filter(q => q.id !== quoteId));
               
-              // 2. If there is an image, delete it from the storage bucket
+              // If there is an image, delete it from the storage bucket
               if (quoteToDelete?.live_photo_url) {
-                // Extract the file path from the public URL. 
-                // Assuming URL structure ends with /quotes_media/userId/filename.jpg
                 const urlParts = quoteToDelete.live_photo_url.split('/');
                 const fileName = urlParts.pop();
                 const folderName = urlParts.pop(); // This should be the userId
                 const filePath = `${folderName}/${fileName}`;
 
-                // Make sure to use your actual bucket name here (e.g., 'quotes_media')
                 await supabase.storage.from('quotes_media').remove([filePath]);
               }
 
-              // 3. Delete from database
+              // Delete from database
               const { error } = await supabase
                 .from('quotes')
                 .delete()
@@ -117,7 +113,7 @@ export default function PublishedQuotesScreen() {
             } catch (error) {
               console.error("Error deleting quote:", error);
               Alert.alert("Error", "Could not delete the quote.");
-              fetchPublishedFeed(0); // Revert optimistic UI on failure
+              fetchPublishedFeed(0);
             }
           } 
         }
@@ -138,6 +134,7 @@ export default function PublishedQuotesScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Header with Title and Notification Bell */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Published</Text>
         <NotificationBell />
@@ -207,7 +204,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fee2e2',
     padding: 10,
     borderRadius: 20,
-    zIndex: 10, // Ensure it's above the QuoteCard
+    zIndex: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

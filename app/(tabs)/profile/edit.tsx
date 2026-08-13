@@ -1,3 +1,4 @@
+// (tabs)/profile/edit.tsx
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, TextInput, StyleSheet, TouchableOpacity, 
@@ -57,8 +58,8 @@ export default function EditProfileScreen() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [1, 1], // Perfect square for avatars
-      quality: 0.5, // Compress to save storage
+      aspect: [1, 1],
+      quality: 0.5,
     });
 
     if (!result.canceled) {
@@ -77,12 +78,11 @@ export default function EditProfileScreen() {
     let finalAvatarUrl = avatarUrl;
 
     try {
-      // 1. Upload new image if selected
+      // Upload new image if selected
       if (newAvatarUri) {
         const base64 = await FileSystem.readAsStringAsync(newAvatarUri, { encoding: 'base64' });
         const fileName = `${userId}/${Date.now()}.jpg`;
         
-        // Assuming you have a storage bucket named 'avatars'
         const { error: uploadError } = await supabase.storage
           .from('avatars')
           .upload(fileName, decode(base64), { contentType: 'image/jpeg', upsert: true });
@@ -96,7 +96,7 @@ export default function EditProfileScreen() {
         finalAvatarUrl = publicUrlData.publicUrl;
       }
 
-      // 2. Update profile in database
+      // Update profile in database
       const { error: updateError } = await supabase
         .from('profiles')
         .update({
@@ -108,7 +108,6 @@ export default function EditProfileScreen() {
 
       if (updateError) throw updateError;
 
-      // 3. Go back to profile screen
       router.back();
 
     } catch (error: any) {

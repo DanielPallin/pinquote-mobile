@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ImageBackground, 
 import { Heart, MessageCircle, SmilePlus, MoreHorizontal, Flag } from 'lucide-react-native';
 import { TEMPLATES } from '../constants/templates';
 import { FeedQuote } from '../types/feed';
-import { supabase } from '../services/supabase'; // Ensure path is correct
+import { supabase } from '../services/supabase';
 
 type Props = {
   quote: FeedQuote;
@@ -13,7 +13,7 @@ type Props = {
   onPressComments?: (quoteId: string) => void;
 };
 
-const QUICK_EMOJIS = ['😂', '🔥', '❤️', '💀', '💯', '🙏', '👀', '✨', '😢', '😍'];
+const QUICK_EMOJIS = ['😂', '🔥', '❤️', '😍', '💯', '🙏', '👀', '✨', '😢', '💀'];
 
 export default function QuoteCard({ quote, onReact, onFavorite, onOpenProfile, onPressComments }: Props) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -55,7 +55,6 @@ export default function QuoteCard({ quote, onReact, onFavorite, onOpenProfile, o
       return;
     }
 
-    // IF IT IS YOUR OWN QUOTE:
     if (user.id === quote.publisher?.id) {
       Alert.alert(
         'Your Quote',
@@ -65,7 +64,6 @@ export default function QuoteCard({ quote, onReact, onFavorite, onOpenProfile, o
       return; 
     }
 
-    // IF IT IS SOMEONE ELSE'S QUOTE:
     Alert.alert(
       'Options',
       'What would you like to do?',
@@ -86,7 +84,6 @@ export default function QuoteCard({ quote, onReact, onFavorite, onOpenProfile, o
   };
 
   const handleReportQuote = (currentUserId: string) => {
-    // Using standard Alert instead of prompt for Android compatibility
     Alert.alert(
       'Report Quote',
       'Why are you reporting this quote?',
@@ -157,7 +154,7 @@ export default function QuoteCard({ quote, onReact, onFavorite, onOpenProfile, o
           <Text style={styles.boldText} onPress={() => onOpenProfile?.(authorName)}>{authorName}</Text> has been quoted by <Text style={styles.boldText} onPress={() => publisherName !== 'Someone' && onOpenProfile?.(publisherName)}>{publisherName}</Text>
         </Text>
         
-        {/* THREE DOTS BUTTON */}
+        {/* REPORT BUTTON */}
         <TouchableOpacity 
           onPress={handleOptions} 
           style={styles.optionsButton} 
@@ -281,14 +278,14 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center', // Changed from flex-start for better touch area
+    alignItems: 'center',
     marginBottom: 12,
-    zIndex: 10, // Forces the row to sit above everything else
-    elevation: 10, // Same as zIndex but for Android
+    zIndex: 10,
+    elevation: 10, 
   },
   optionsButton: {
-    padding: 8, // Larger area around the icon
-    marginRight: -8, // Pulls it slightly to the right to align with the card
+    padding: 8,
+    marginRight: -8,
     zIndex: 20,
     elevation: 20,
   },

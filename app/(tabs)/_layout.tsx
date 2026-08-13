@@ -1,3 +1,4 @@
+// (tabs)/_layout.tsx
 import React from 'react';
 import { Tabs, useRouter } from 'expo-router';
 import { Home, User, Plus } from 'lucide-react-native';
@@ -17,9 +18,9 @@ export default function TabLayout() {
           borderTopColor: '#f1f5f9',
           elevation: 0,
           shadowOpacity: 0,
-          height: 60, // Gives a bit more room for the custom button
+          height: 60,
         },
-        tabBarShowLabel: false, // Hides the text under the icons for a cleaner look
+        tabBarShowLabel: false,
       }}
     >
       {/* Feed Tab */}
@@ -34,7 +35,6 @@ export default function TabLayout() {
       <Tabs.Screen
         name="create"
         options={{
-          // We override the default tab button completely
           tabBarButton: () => (
             <TouchableOpacity 
               onPress={() => router.push('/create')}
@@ -62,7 +62,7 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   createButtonContainer: {
-    top: -20, // Lifts the button up outside the standard tab bar
+    top: -20,
     justifyContent: 'center',
     alignItems: 'center',
     flex: 1, 
