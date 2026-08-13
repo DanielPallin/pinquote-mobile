@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ImageBackground } from 'react-native';
-import { Heart, MessageCircle, SmilePlus } from 'lucide-react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ImageBackground, Alert } from 'react-native';
+import { Heart, MessageCircle, SmilePlus, MoreHorizontal, Flag } from 'lucide-react-native';
 import { TEMPLATES } from '../constants/templates';
 import { FeedQuote } from '../types/feed';
+import { supabase } from '../services/supabase'; // Ensure path is correct
 
 type Props = {
   quote: FeedQuote;
@@ -47,11 +48,125 @@ export default function QuoteCard({ quote, onReact, onFavorite, onOpenProfile, o
     </>
   );
 
+  const handleOptions = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      Alert.alert('Error', 'You must be logged in to do this.');
+      return;
+    }
+
+    // IF IT IS YOUR OWN QUOTE:
+    if (user.id === quote.publisher?.id) {
+      Alert.alert(
+        'Your Quote',
+        'You cannot report or block yourself.',
+        [{ text: 'OK', style: 'cancel' }]
+      );
+      return; 
+    }
+
+    // IF IT IS SOMEONE ELSE'S QUOTE:
+    Alert.alert(
+      'Options',
+      'What would you like to do?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Report Quote',
+          style: 'destructive',
+          onPress: () => handleReportQuote(user.id),
+        },
+        {
+          text: 'Block User',
+          style: 'destructive',
+          onPress: () => handleBlockUser(user.id),
+        },
+      ]
+    );
+  };
+
+  const handleReportQuote = (currentUserId: string) => {
+    // Using standard Alert instead of prompt for Android compatibility
+    Alert.alert(
+      'Report Quote',
+      'Why are you reporting this quote?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Spam',
+          onPress: () => submitReport(currentUserId, 'Spam'),
+        },
+        {
+          text: 'Inappropriate Content',
+          style: 'destructive',
+          onPress: () => submitReport(currentUserId, 'Inappropriate Content'),
+        },
+      ]
+    );
+  };
+
+  const submitReport = async (currentUserId: string, reason: string) => {
+    try {
+      const { error } = await supabase.from('reports').insert({
+        reporter_id: currentUserId,
+        quote_id: quote.id,
+        reported_user_id: quote.publisher?.id,
+        reason: reason,
+      });
+      if (error) throw error;
+      Alert.alert('Thank you', 'The quote has been reported and will be reviewed.');
+    } catch (error) {
+      console.error('Error reporting:', error);
+      Alert.alert('Error', 'Could not submit report.');
+    }
+  };
+
+  const handleBlockUser = (currentUserId: string) => {
+    Alert.alert(
+      'Block User',
+      `Are you sure you want to block ${publisherName}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Block',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { error } = await supabase.from('blocks').insert({
+                blocker_id: currentUserId,
+                blocked_id: quote.publisher?.id,
+              });
+              if (error) throw error;
+              Alert.alert('Blocked', 'User has been blocked. Refresh the feed to apply changes.');
+            } catch (error) {
+              console.error('Error blocking:', error);
+              Alert.alert('Error', 'Could not block user.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.contextText}>
-        <Text style={styles.boldText} onPress={() => onOpenProfile?.(authorName)}>{authorName}</Text> has been quoted by <Text style={styles.boldText} onPress={() => publisherName !== 'Someone' && onOpenProfile?.(publisherName)}>{publisherName}</Text>
-      </Text>
+      
+      {/* --- NEW HEADER ROW --- */}
+      <View style={styles.headerRow}>
+        <Text style={[styles.contextText, { flex: 1 }]}>
+          <Text style={styles.boldText} onPress={() => onOpenProfile?.(authorName)}>{authorName}</Text> has been quoted by <Text style={styles.boldText} onPress={() => publisherName !== 'Someone' && onOpenProfile?.(publisherName)}>{publisherName}</Text>
+        </Text>
+        
+        {/* THREE DOTS BUTTON */}
+        <TouchableOpacity 
+          onPress={handleOptions} 
+          style={styles.optionsButton} 
+          hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+        >
+          <Flag size={20} color="#fa0000" />
+        </TouchableOpacity>
+      </View>
+      {/* --------------------- */}
 
       {isPhoto ? (
         <ImageBackground 
@@ -137,7 +252,7 @@ export default function QuoteCard({ quote, onReact, onFavorite, onOpenProfile, o
 
 const styles = StyleSheet.create({
   container: { marginBottom: 32, paddingHorizontal: 16 },
-  contextText: { textAlign: 'center', color: '#64748b', fontSize: 14, marginBottom: 12 },
+  contextText: { textAlign: 'left', color: '#64748b', fontSize: 14 },
   boldText: { fontWeight: '700', color: '#0f172a' },
   card: { borderRadius: 32, padding: 32, alignItems: 'center', shadowColor: '#000000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 15, elevation: 8 },
   overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.35)' },
@@ -163,4 +278,18 @@ const styles = StyleSheet.create({
   emojiScrollContent: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, gap: 16 },
   emojiButton: { padding: 2 },
   quickEmoji: { fontSize: 28 },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center', // Changed from flex-start for better touch area
+    marginBottom: 12,
+    zIndex: 10, // Forces the row to sit above everything else
+    elevation: 10, // Same as zIndex but for Android
+  },
+  optionsButton: {
+    padding: 8, // Larger area around the icon
+    marginRight: -8, // Pulls it slightly to the right to align with the card
+    zIndex: 20,
+    elevation: 20,
+  },
 });
