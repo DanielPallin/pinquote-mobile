@@ -1,15 +1,30 @@
 // app/(tabs)/profile/index.tsx
 import React, { useState, useEffect } from 'react';
 import { 
-  View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Share as RNShare
+  View, Text, StyleSheet, Image, TouchableOpacity, 
+  ScrollView, ActivityIndicator, Alert, Share as RNShare
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { 
-  Bell, Edit3, Share, Crown, LayoutTemplate, Settings, Heart 
+  Edit3, Share, Crown, LayoutTemplate, Settings, Heart 
 } from 'lucide-react-native';
 import NotificationBell from '../../../components/NotificationBell';
 import { supabase } from '../../../services/supabase';
+
+interface StyleConfig {
+  backgroundColor?: string;
+  textColor?: string;
+}
+
+interface QuotePreview {
+  id: string;
+  content: string;
+  live_photo_url: string | null;
+  template: {
+    style_config: StyleConfig;
+  } | null;
+}
 
 interface ProfileData {
   id: string;
@@ -20,6 +35,8 @@ interface ProfileData {
   followers: number;
   favorites: number;
   isPro: boolean;
+  latestPublished: QuotePreview[];
+  latestQuotedIn: QuotePreview[];
 }
 
 export default function ProfileScreen() {
@@ -43,12 +60,17 @@ export default function ProfileScreen() {
         { data: profile, error: profileError },
         { count: followersCount },
         { count: followingCount },
-        { count: favoritesCount }
+        { count: favoritesCount },
+        { data: publishedQuotes },
+        { data: quotedInQuotes }
       ] = await Promise.all([
         supabase.from('profiles').select('id, username, avatar_url, bio').eq('id', authUser.id).single(),
         supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', authUser.id),
         supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', authUser.id),
-        supabase.from('favorites').select('*', { count: 'exact', head: true }).eq('user_id', authUser.id)
+        supabase.from('favorites').select('*', { count: 'exact', head: true }).eq('user_id', authUser.id),
+        // Hämta templates och live_photo
+        supabase.from('quotes').select('id, content, live_photo_url, template:templates(style_config)').eq('publisher_id', authUser.id).order('created_at', { ascending: false }).limit(4),
+        supabase.from('quotes').select('id, content, live_photo_url, template:templates(style_config)').eq('quoted_user_id', authUser.id).order('created_at', { ascending: false }).limit(4)
       ]);
 
       if (profileError) throw profileError;
@@ -62,7 +84,9 @@ export default function ProfileScreen() {
           following: followingCount || 0,
           followers: followersCount || 0,
           favorites: favoritesCount || 0,
-          isPro: true 
+          isPro: true,
+          latestPublished: (publishedQuotes as unknown as QuotePreview[]) || [],
+          latestQuotedIn: (quotedInQuotes as unknown as QuotePreview[]) || []
         });
       }
 
@@ -85,6 +109,41 @@ export default function ProfileScreen() {
     }
   };
 
+  const renderPreviewGrid = (quotes: QuotePreview[]) => {
+    const emptySpots = 4 - quotes.length;
+    return (
+      <View style={styles.previewGrid}>
+        {quotes.map(q => {
+          // Extrahera stilar dynamiskt
+          const styleConfig = q.template?.style_config || {};
+          const bgColor = styleConfig.backgroundColor || '#ffffff';
+          const textColor = styleConfig.textColor || '#334155';
+          const hasImage = !!q.live_photo_url;
+
+          return (
+            <View key={q.id} style={[styles.miniCard, { backgroundColor: hasImage ? '#000' : bgColor }]}>
+              {hasImage && (
+                <>
+                  <Image source={{ uri: q.live_photo_url as string }} style={StyleSheet.absoluteFill} />
+                  <View style={styles.imageOverlay} />
+                </>
+              )}
+              <Text 
+                style={[styles.miniCardText, { color: hasImage ? '#ffffff' : textColor }]} 
+                numberOfLines={2}
+              >
+                {`“${q.content}”`}
+              </Text>
+            </View>
+          );
+        })}
+        {Array.from({ length: emptySpots }).map((_, i) => (
+          <View key={`empty-${i}`} style={[styles.miniCard, styles.emptyMiniCard]} />
+        ))}
+      </View>
+    );
+  };
+
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
@@ -103,7 +162,6 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* HEADER */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>PinQuote</Text>
         <NotificationBell />
@@ -111,7 +169,6 @@ export default function ProfileScreen() {
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
-        {/* USER INFO SECTION */}
         <View style={styles.userInfoSection}>
           <View style={styles.avatarColumn}>
             <View style={styles.avatarContainer}>
@@ -138,73 +195,47 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* ACTION BUTTONS */}
         <View style={styles.actionButtonsRow}>
-          <TouchableOpacity 
-            style={styles.actionButton} 
-            onPress={() => router.push('/profile/edit')}
-          >
+          <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/profile/edit')}>
             <Edit3 size={16} color="#0f172a" />
             <Text style={styles.actionButtonText}>Edit Profile</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity 
-            style={styles.actionButton} 
-            onPress={handleShareProfile}
-          >
+          <TouchableOpacity style={styles.actionButton} onPress={handleShareProfile}>
             <Share size={16} color="#0f172a" />
             <Text style={styles.actionButtonText}>Share Profile</Text>
           </TouchableOpacity>
         </View>
 
-        {/* QUOTE GRIDS NAVIGATION */}
         <View style={styles.gridsSection}>
-          <TouchableOpacity 
-            style={styles.gridBtn}
-            onPress={() => router.push('/profile/published')}
-          >
+          <TouchableOpacity style={styles.gridBtn} onPress={() => router.push('/profile/published')}>
             <Text style={styles.gridLabel}>Published Quotes</Text>
-            <View style={styles.gridBox}>
-               <View style={styles.gridRow}>
-                 <View style={styles.gridCell} /><View style={styles.gridCell} />
-               </View>
-               <View style={styles.gridRow}>
-                 <View style={styles.gridCell} /><View style={styles.gridCell} />
-               </View>
+            <View style={styles.gridBoxWrapper}>
+               {renderPreviewGrid(user.latestPublished)}
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.gridBtn}
-            onPress={() => router.push('/profile/quoted-in')}
-          >
+          <TouchableOpacity style={styles.gridBtn} onPress={() => router.push('/profile/quoted-in')}>
             <Text style={styles.gridLabel}>Quoted In</Text>
-            <View style={styles.gridBox}>
-               <View style={styles.gridRow}>
-                 <View style={styles.gridCell} /><View style={styles.gridCell} />
-               </View>
-               <View style={styles.gridRow}>
-                 <View style={styles.gridCell} /><View style={styles.gridCell} />
-               </View>
+            <View style={styles.gridBoxWrapper}>
+               {renderPreviewGrid(user.latestQuotedIn)}
             </View>
           </TouchableOpacity>
         </View>
 
-        {/* BOTTOM SECTION: STATS & SETTINGS */}
         <View style={styles.bottomSection}>
-          
           <View style={styles.statsColumn}>
-            <TouchableOpacity style={styles.statPill}>
+            <TouchableOpacity style={styles.statPill} onPress={() => router.push('/profile/network?tab=following')}>
               <Text style={styles.statPillText}>Following</Text>
               <Text style={styles.statPillNumber}>{user.following}</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.statPill}>
+            <TouchableOpacity style={styles.statPill} onPress={() => router.push('/profile/network?tab=followers')}>
               <Text style={styles.statPillText}>Followers</Text>
               <Text style={styles.statPillNumber}>{user.followers}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.statPill}>
+            <TouchableOpacity style={styles.statPill} onPress={() => router.push('/profile/favorites')}>
               <Text style={styles.statPillText}>Favourites</Text>
               <View style={styles.favoriteRow}>
                 <Text style={styles.statPillNumber}>{user.favorites}</Text>
@@ -226,10 +257,7 @@ export default function ProfileScreen() {
               <Text style={styles.chevron}>›</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={styles.settingsItem}
-              onPress={() => router.push('/profile/settings')}
-            >
+            <TouchableOpacity style={styles.settingsItem} onPress={() => router.push('/profile/settings')}>
               <Settings size={20} color="#64748b" />
               <Text style={styles.settingsText}>Account settings</Text>
               <Text style={styles.chevron}>›</Text>
@@ -248,26 +276,14 @@ const styles = StyleSheet.create({
   errorText: { fontSize: 16, color: '#ef4444', fontWeight: 'bold' },
   scrollContent: { padding: 20, paddingBottom: 40 },
   
-  header: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    paddingHorizontal: 24, 
-    paddingBottom: 16,
-    backgroundColor: '#f8fafc',
-    zIndex: 10,
-  },
-  headerTitle: { 
-    fontSize: 28, 
-    fontWeight: '900', 
-    color: '#0f172a' 
-  },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24, paddingBottom: 16, backgroundColor: '#f8fafc', zIndex: 10 },
+  headerTitle: { fontSize: 28, fontWeight: '900', color: '#0f172a' },
 
   userInfoSection: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, gap: 16 },
   avatarColumn: { alignItems: 'center', flex: 1, gap: 8 },
   username: { fontSize: 16, fontWeight: '800', color: '#1e293b', textAlign: 'center' },
   avatarContainer: { position: 'relative' },
-  avatar: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#cbd5e1' },
+  avatar: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#cbd5e1', overflow: 'hidden' },
   avatarPlaceholder: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#e2e8f0', justifyContent: 'center', alignItems: 'center' },
   avatarPlaceholderText: { fontSize: 32, fontWeight: '800', color: '#64748b' },
   
@@ -283,9 +299,15 @@ const styles = StyleSheet.create({
   gridsSection: { flexDirection: 'row', justifyContent: 'space-between', gap: 16, marginBottom: 40 },
   gridBtn: { flex: 1, alignItems: 'center' },
   gridLabel: { fontSize: 15, fontWeight: '800', color: '#1e293b', marginBottom: 12 },
-  gridBox: { width: '100%', aspectRatio: 1, backgroundColor: '#f1f5f9', borderRadius: 24, padding: 8, borderWidth: 4, borderColor: '#bbf7d0' },
-  gridRow: { flex: 1, flexDirection: 'row', gap: 8, marginBottom: 8 },
-  gridCell: { flex: 1, backgroundColor: '#e2e8f0', borderRadius: 12 },
+  
+  gridBoxWrapper: { width: '100%', aspectRatio: 1, backgroundColor: '#f1f5f9', borderRadius: 24, padding: 8, borderWidth: 4, borderColor: '#bbf7d0' },
+  previewGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, width: '100%', height: '100%', justifyContent: 'space-between', alignContent: 'space-between' },
+  
+  // Real minicards
+  miniCard: { width: '47%', height: '47%', borderRadius: 12, padding: 4, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1, overflow: 'hidden', position: 'relative' },
+  emptyMiniCard: { backgroundColor: '#e2e8f0', borderWidth: 0, shadowOpacity: 0, elevation: 0 },
+  miniCardText: { fontSize: 8, textAlign: 'center', fontWeight: '800', lineHeight: 11, zIndex: 2 },
+  imageOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.3)', zIndex: 1 },
 
   bottomSection: { flexDirection: 'row', justifyContent: 'space-between', gap: 24 },
   statsColumn: { flex: 1, gap: 16 },

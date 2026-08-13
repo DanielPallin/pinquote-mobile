@@ -19,11 +19,18 @@ type CommentType = {
   } | null;
 };
 
+const ITEMS_PER_PAGE = 10;
+
 export default function FeedScreen() {
   const [quotes, setQuotes] = useState<FeedQuote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Pagination State
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // Comments Sheet State
   const [activeQuoteId, setActiveQuoteId] = useState<string | null>(null);
@@ -52,14 +59,22 @@ export default function FeedScreen() {
       commentCount: q.comments?.[0]?.count || 0,
       favoriteCount: (q.favorites || []).length,
       isFavorited: userId ? (q.favorites || []).some((f: any) => f.user_id === userId) : false,
-      
     };
   };
 
-  const fetchQuotes = async () => {
+  const fetchQuotes = async (pageNumber: number) => {
     try {
+      if (pageNumber === 0) {
+        setIsLoading(true);
+      } else {
+        setIsLoadingMore(true);
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (user) setCurrentUserId(user.id);
+
+      const start = pageNumber * ITEMS_PER_PAGE;
+      const end = start + ITEMS_PER_PAGE - 1;
 
       const { data, error } = await supabase
         .from('quotes')
@@ -77,32 +92,54 @@ export default function FeedScreen() {
           comments(count)
         `)
         .order('created_at', { ascending: false })
-        .limit(10);
+        .range(start, end);
 
       if (error) throw error;
       
       if (data) {
         const formattedQuotes = data.map(q => formatQuote(q, user?.id || null));
-        setQuotes(formattedQuotes as unknown as FeedQuote[]);
+        
+        if (data.length < ITEMS_PER_PAGE) {
+          setHasMore(false);
+        }
+
+        if (pageNumber === 0) {
+          setQuotes(formattedQuotes as unknown as FeedQuote[]);
+        } else {
+          setQuotes(prev => [...prev, ...(formattedQuotes as unknown as FeedQuote[])]);
+        }
       }
     } catch (error) {
       console.error('Error fetching quotes:', error);
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
       setIsRefreshing(false);
     }
   };
 
   useFocusEffect(
     useCallback(() => {
-      fetchQuotes();
+      setPage(0);
+      setHasMore(true);
+      fetchQuotes(0);
     }, [])
   );
 
   const onRefresh = useCallback(() => {
     setIsRefreshing(true);
-    fetchQuotes();
+    setPage(0);
+    setHasMore(true);
+    fetchQuotes(0);
   }, []);
+
+  const handleLoadMore = () => {
+    if (!isLoadingMore && hasMore) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchQuotes(nextPage);
+    }
+  };
 
   const handlePressComments = async (quoteId: string) => {
     setActiveQuoteId(quoteId);
@@ -247,7 +284,7 @@ export default function FeedScreen() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading && page === 0) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#0f172a" />
@@ -257,7 +294,6 @@ export default function FeedScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header with App Title and Notification Bell */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>PinQuote</Text>
         <NotificationBell />
@@ -276,12 +312,18 @@ export default function FeedScreen() {
         )}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
         refreshControl={
           <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor="#0f172a" />
         }
+        ListFooterComponent={
+          isLoadingMore ? (
+            <ActivityIndicator size="small" color="#94a3b8" style={styles.footerLoader} />
+          ) : null
+        }
       />
 
-      {/* Comments Bottom Sheet */}
       <BottomSheet
         ref={bottomSheetRef}
         index={-1}
@@ -330,7 +372,6 @@ export default function FeedScreen() {
             />
           )}
 
-          {/* Input Box */}
           <View style={styles.inputContainer}>
             <BottomSheetTextInput
               style={styles.input}
@@ -357,13 +398,12 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   
-  // New Header Styles
   header: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     alignItems: 'center', 
     paddingHorizontal: 24, 
-    paddingTop: 60, // Safe area space
+    paddingTop: 60,
     paddingBottom: 16,
     backgroundColor: '#f8fafc',
     zIndex: 10,
@@ -374,7 +414,8 @@ const styles = StyleSheet.create({
     color: '#0f172a' 
   },
   
-  listContent: { paddingTop: 10, paddingBottom: 100 }, // Reduced paddingTop since header takes space
+  listContent: { paddingTop: 10, paddingBottom: 100 },
+  footerLoader: { marginVertical: 20 },
   
   sheetContainer: { flex: 1, backgroundColor: '#ffffff' },
   sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },

@@ -9,14 +9,8 @@ export default function ProfileLayout() {
       <Stack.Screen name="quoted-in" options={{ headerTitle: 'You were Quoted in', headerBackTitle: 'Profile' }} />
       <Stack.Screen name="settings" options={{ headerTitle: 'Account Settings' }} />
       <Stack.Screen name="edit" options={{ headerTitle: 'Edit Profile', headerBackTitle: 'Profile' }} />
-      
-      <Stack.Screen 
-        name="quote/[id]" 
-        options={{ 
-          headerTitle: 'Quote',
-          headerBackTitle: 'Back' 
-        }} 
-      />
-    </Stack>
+      <Stack.Screen name="favorites" options={{ headerTitle: 'Favorites', headerBackTitle: 'Profile' }} />
+      <Stack.Screen name="network" options={{ headerTitle: 'Network', headerBackTitle: 'Profile' }} />
+      <Stack.Screen name="quote/[id]" options={{ headerTitle: 'Quote',headerBackTitle: 'Back' }} /></Stack>
   );
 }

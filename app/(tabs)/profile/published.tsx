@@ -1,12 +1,9 @@
 // app/(tabs)/profile/published.tsx
 import React, { useState, useEffect } from 'react';
 import { 
-  View, 
-  StyleSheet, 
-  FlatList, 
-  ActivityIndicator,
-  Text 
+  View, StyleSheet, FlatList, ActivityIndicator, Text, TouchableOpacity, Alert 
 } from 'react-native';
+import { Trash2 } from 'lucide-react-native';
 import { supabase } from '../../../services/supabase';
 import QuoteCard from '../../../components/QuoteCard';
 import { FeedQuote } from '../../../types/feed';
@@ -21,6 +18,10 @@ export default function PublishedQuotesScreen() {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchPublishedFeed(0);
+  }, []);
 
   const fetchPublishedFeed = async (pageNumber: number) => {
     try {
@@ -38,7 +39,7 @@ export default function PublishedQuotesScreen() {
       const { data, error } = await supabase
         .from('quotes')
         .select(`
-          id, content, created_at, quoted_email, custom_author_name,
+          id, content, created_at, quoted_email, custom_author_name, live_photo_url,
           publisher:profiles!quotes_publisher_id_fkey(id, username),
           quoted_user:profiles!quotes_quoted_user_id_fkey(username, avatar_url),
           template:templates(style_config),
@@ -52,8 +53,7 @@ export default function PublishedQuotesScreen() {
 
       if (error) throw error;
 
-      // NOTE: Parse data through your formatQuote function here
-      const formattedData = data as unknown as FeedQuote[]; // Placeholder cast
+      const formattedData = data as unknown as FeedQuote[]; 
 
       if (formattedData.length < ITEMS_PER_PAGE) {
         setHasMore(false);
@@ -69,10 +69,6 @@ export default function PublishedQuotesScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchPublishedFeed(0);
-  }, []);
-
   const handleLoadMore = () => {
     if (!isPaginationLoading && hasMore) {
       const nextPage = page + 1;
@@ -81,24 +77,41 @@ export default function PublishedQuotesScreen() {
     }
   };
 
-  // Optimistic UI updates for the list
-  const handleReaction = (emoji: string, quoteId: string) => {
-    console.log(`Reacted with ${emoji} on ${quoteId}`);
+  const handleDeleteQuote = (quoteId: string) => {
+    Alert.alert(
+      "Delete Quote",
+      "Are you sure you want to delete this quote? This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Delete", 
+          style: "destructive", 
+          onPress: async () => {
+            try {
+              // Optismistic UI: Remove from list immediately
+              setQuotes(prev => prev.filter(q => q.id !== quoteId));
+              
+              // Database delete
+              const { error } = await supabase
+                .from('quotes')
+                .delete()
+                .eq('id', quoteId);
+
+              if (error) throw error;
+            } catch (error) {
+              console.error("Error deleting quote:", error);
+              Alert.alert("Error", "Could not delete the quote.");
+              // Refresh to restore if failed
+              fetchPublishedFeed(0); 
+            }
+          } 
+        }
+      ]
+    );
   };
 
-  const handleFavorite = (quoteId: string) => {
-    setQuotes(prev => prev.map(q => {
-      if (q.id === quoteId) {
-        const isAdding = !q.isFavorited;
-        return {
-          ...q,
-          isFavorited: isAdding,
-          favoriteCount: q.favoriteCount + (isAdding ? 1 : -1)
-        };
-      }
-      return q;
-    }));
-  };
+  const handleReaction = (emoji: string, quoteId: string) => {};
+  const handleFavorite = (quoteId: string) => {};
 
   if (isLoading && page === 0) {
     return (
@@ -110,9 +123,8 @@ export default function PublishedQuotesScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header with Title and Notification Bell */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Published Quotes</Text>
+        <Text style={styles.headerTitle}>Published</Text>
         <NotificationBell />
       </View>
 
@@ -122,12 +134,21 @@ export default function PublishedQuotesScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
-          <QuoteCard 
-            quote={item}
-            onReact={handleReaction}
-            onFavorite={handleFavorite}
-            onOpenProfile={(username) => console.log('Already in profile context')}
-          />
+          <View style={styles.quoteWrapper}>
+            <QuoteCard 
+              quote={item}
+              onReact={handleReaction}
+              onFavorite={handleFavorite}
+              onOpenProfile={() => {}}
+            />
+            {/* DELETE BUTTON OVERLAY */}
+            <TouchableOpacity 
+              style={styles.deleteButton}
+              onPress={() => handleDeleteQuote(item.id)}
+            >
+              <Trash2 size={20} color="#ef4444" />
+            </TouchableOpacity>
+          </View>
         )}
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
@@ -152,41 +173,34 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', 
     alignItems: 'center', 
     paddingHorizontal: 24, 
+    paddingTop: 60,
     paddingBottom: 16,
     backgroundColor: '#f8fafc',
     zIndex: 10,
   },
-  headerTitle: { 
-    fontSize: 28, 
-    fontWeight: '900', 
-    color: '#0f172a' 
+  headerTitle: { fontSize: 28, fontWeight: '900', color: '#0f172a' },
+  container: { flex: 1, backgroundColor: '#f8fafc' },
+  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8fafc' },
+  listContent: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 100 },
+  
+  // WRAPPER TO POSITION DELETE BUTTON
+  quoteWrapper: { position: 'relative', marginBottom: 16 },
+  deleteButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    backgroundColor: '#fee2e2',
+    padding: 10,
+    borderRadius: 20,
+    zIndex: 10, // Ensure it's above the QuoteCard
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3
   },
-  container: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f8fafc',
-  },
-  listContent: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 40,
-  },
-  emptyContainer: {
-    padding: 40,
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#94a3b8',
-    textAlign: 'center',
-  },
-  footerLoader: {
-    marginVertical: 20,
-  }
+
+  emptyContainer: { padding: 40, alignItems: 'center' },
+  emptyText: { fontSize: 16, fontWeight: '600', color: '#94a3b8', textAlign: 'center' },
+  footerLoader: { marginVertical: 20 }
 });
