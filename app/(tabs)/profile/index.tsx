@@ -1,9 +1,9 @@
 // app/(tabs)/profile/index.tsx
 import React, { useState, useEffect } from 'react';
 import { 
-  View, Text, StyleSheet, Image, TouchableOpacity, 
-  SafeAreaView, ScrollView, ActivityIndicator, Alert, Share as RNShare
+  View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Share as RNShare
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { 
   Bell, Edit3, Share, Crown, LayoutTemplate, Settings, Heart 
