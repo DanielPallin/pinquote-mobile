@@ -1,4 +1,3 @@
-// app/(auth)/login.tsx
 import React, { useState } from 'react';
 import { 
   View, Text, TextInput, TouchableOpacity, StyleSheet, 
@@ -9,7 +8,6 @@ import { Square, CheckSquare } from 'lucide-react-native';
 import { supabase } from '../../services/supabase';
 import { useRouter } from 'expo-router';
 
-// Smooth toggle Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
@@ -17,34 +15,49 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 export default function AuthScreen() {
   const router = useRouter();
   
-  // UI State
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   
-  // Form State
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const toggleAuthMode = () => {
-    // Triggers a smooth animation when the UI changes
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setIsLogin(!isLogin);
   };
 
   const handleSignIn = async () => {
-    if (!email || !password) {
-      Alert.alert('Missing fields', 'Please enter both email and password.');
+    if (!identifier || !password) {
+      Alert.alert('Missing fields', 'Please enter your login details.');
       return;
     }
 
     setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    let loginEmail = identifier.trim();
+
+    if (!loginEmail.includes('@')) {
+      const { data, error } = await supabase.rpc('get_email_from_username', { 
+        lookup_username: loginEmail.toLowerCase() 
+      });
+
+      if (error || !data) {
+        Alert.alert('Login Failed', 'Username not found.');
+        setLoading(false);
+        return;
+      }
+      loginEmail = data; 
+    }
+
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ 
+      email: loginEmail, 
+      password 
+    });
     
-    if (error) {
-      Alert.alert('Error', error.message);
-    } else if (data.session) {
+    if (authError) {
+      Alert.alert('Error', authError.message);
+    } else if (authData.session) {
       router.replace('/(tabs)');
     }
     
@@ -52,19 +65,23 @@ export default function AuthScreen() {
   };
 
   const handleSignUp = async () => {
-    // 1. App Store Requirement: Validate EULA
     if (!agreedToTerms) {
       Alert.alert('Terms & Conditions', 'You must agree to the Terms and Conditions and Privacy Policy to create an account.');
       return;
     }
 
-    // 2. Validate all fields
+    const email = identifier.trim();
+
     if (!email || !password || !username) {
       Alert.alert('Missing fields', 'Please fill in all the required fields.');
       return;
     }
 
-    // 3. Username length check
+    if (!email.includes('@')) {
+      Alert.alert('Invalid Email', 'Please provide a valid email address for registration.');
+      return;
+    }
+
     if (username.length < 3) {
       Alert.alert('Invalid Username', 'Username must be at least 3 characters long.');
       return;
@@ -72,7 +89,6 @@ export default function AuthScreen() {
 
     setLoading(true);
     
-    // 4. Create user in Supabase Auth and pass metadata
     const { error } = await supabase.auth.signUp({ 
       email, 
       password,
@@ -87,7 +103,7 @@ export default function AuthScreen() {
       Alert.alert('Error', error.message);
     } else {
       Alert.alert('Success', 'Check your email for the confirmation link!');
-      toggleAuthMode();
+      toggleAuthMode(); 
     }
     setLoading(false);
   };
@@ -110,7 +126,18 @@ export default function AuthScreen() {
         </View>
 
         <View style={styles.formContainer}>
-          {/* SIGN UP ONLY FIELDS */}
+          
+          <TextInput
+            style={styles.input}
+            placeholder={isLogin ? "Email or Username" : "Email"}
+            placeholderTextColor="#94a3b8"
+            value={identifier}
+            onChangeText={setIdentifier}
+            autoCapitalize="none"
+            keyboardType={isLogin ? "default" : "email-address"}
+            autoCorrect={false}
+          />
+
           {!isLogin && (
             <View style={styles.expandedFields}>
               <TextInput
@@ -125,17 +152,6 @@ export default function AuthScreen() {
             </View>
           )}
 
-          {/* COMMON FIELDS */}
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            placeholderTextColor="#94a3b8"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
-
           <TextInput
             style={styles.input}
             placeholder="Password"
@@ -145,7 +161,6 @@ export default function AuthScreen() {
             secureTextEntry
           />
 
-          {/* APP STORE REQUIREMENT: EULA */}
           {!isLogin && (
             <TouchableOpacity 
               style={styles.termsContainer} 
@@ -163,7 +178,6 @@ export default function AuthScreen() {
             </TouchableOpacity>
           )}
 
-          {/* ACTION BUTTON */}
           <TouchableOpacity 
             style={[styles.primaryBtn, !isLogin && styles.primaryBtnSignup]} 
             onPress={isLogin ? handleSignIn : handleSignUp} 
@@ -179,7 +193,6 @@ export default function AuthScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* TOGGLE AUTH MODE */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
             {isLogin ? "Don't have an account? " : "Already have an account? "}
@@ -204,7 +217,7 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 16, fontWeight: '600', color: '#64748b' },
   
   formContainer: { width: '100%' },
-  expandedFields: { overflow: 'hidden' },
+  expandedFields: { overflow: 'hidden' }, 
   
   input: { 
     backgroundColor: '#f8fafc', 
@@ -223,7 +236,7 @@ const styles = StyleSheet.create({
   linkText: { color: '#0f172a', fontWeight: '700' },
   
   primaryBtn: { 
-    backgroundColor: '#f1f5f9',
+    backgroundColor: '#f1f5f9', 
     padding: 18, 
     borderRadius: 16, 
     alignItems: 'center', 

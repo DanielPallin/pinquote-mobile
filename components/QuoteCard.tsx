@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ImageBackground, Alert } from 'react-native';
 import { Heart, MessageCircle, SmilePlus, MoreHorizontal, Flag } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 import { TEMPLATES } from '../constants/templates';
 import { FeedQuote } from '../types/feed';
 import { supabase } from '../services/supabase';
@@ -9,22 +10,52 @@ type Props = {
   quote: FeedQuote;
   onReact?: (emoji: string, quoteId: string) => void;
   onFavorite?: (quoteId: string) => void;
-  onOpenProfile?: (username: string) => void;
   onPressComments?: (quoteId: string) => void;
 };
 
 const QUICK_EMOJIS = ['😂', '🔥', '❤️', '😍', '💯', '🙏', '👀', '✨', '😢', '💀'];
 
-export default function QuoteCard({ quote, onReact, onFavorite, onOpenProfile, onPressComments }: Props) {
+export default function QuoteCard({ quote, onReact, onFavorite, onPressComments }: Props) {
+  const router = useRouter();
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const template = TEMPLATES.find(t => t.id === quote.template_id) || TEMPLATES[0];
   
-  const authorName = quote.quoted_user?.username || quote.custom_author_name || 'Unknown';
   const publisherName = quote.publisher?.username || 'Someone';
+
+  // --- Email masking ---
+  const isPending = !quote.quoted_user?.username && quote.custom_author_name?.includes('@');
+  
+  const displayAuthorName = quote.quoted_user?.username 
+    ? quote.quoted_user.username 
+    : (isPending ? 'Pending User' : (quote.custom_author_name || 'Unknown'));
 
   const isPhoto = !!quote.live_photo_url;
   const bgColor = isPhoto ? '#000000' : template.backgroundColor;
   const textColor = isPhoto ? '#ffffff' : template.textColor;
+
+  // --- Username logic ---
+  const handleAuthorPress = () => {
+    if (quote.quoted_user?.id) {
+      router.push(`/user/${quote.quoted_user.id}`);
+    } else if (isPending) {
+      Alert.alert(
+        'Pending User', 
+        'This user has been invited to PinQuote but hasn\'t created an account yet.'
+      );
+    } else if (quote.custom_author_name) {
+      Alert.alert(
+        'Custom Name', 
+        'This is a custom Username with no account attached to it.'
+      );
+    }
+  };
+
+  const handlePublisherPress = () => {
+    if (quote.publisher?.id) {
+      router.push(`/user/${quote.publisher.id}`);
+    }
+  };
+  // -----------------------------------
 
   const handleReactionPress = (emoji: string) => {
     onReact?.(emoji, quote.id);
@@ -42,7 +73,7 @@ export default function QuoteCard({ quote, onReact, onFavorite, onOpenProfile, o
       <View style={styles.authorContainer}>
         <View style={[styles.divider, { backgroundColor: textColor }]} />
         <Text style={[styles.authorText, { color: textColor }, isPhoto && styles.photoTextShadow]}>
-          -{authorName}
+          -{displayAuthorName}
         </Text>
       </View>
     </>
@@ -148,10 +179,16 @@ export default function QuoteCard({ quote, onReact, onFavorite, onOpenProfile, o
   return (
     <View style={styles.container}>
       
-      {/* --- NEW HEADER ROW --- */}
+      {/* --- HEADER ROW --- */}
       <View style={styles.headerRow}>
         <Text style={[styles.contextText, { flex: 1 }]}>
-          <Text style={styles.boldText} onPress={() => onOpenProfile?.(authorName)}>{authorName}</Text> has been quoted by <Text style={styles.boldText} onPress={() => publisherName !== 'Someone' && onOpenProfile?.(publisherName)}>{publisherName}</Text>
+          <Text style={styles.boldText} onPress={handleAuthorPress}>
+            {displayAuthorName}
+          </Text> 
+          {' '}has been quoted by{' '} 
+          <Text style={styles.boldText} onPress={handlePublisherPress}>
+            {publisherName}
+          </Text>
         </Text>
         
         {/* REPORT BUTTON */}
