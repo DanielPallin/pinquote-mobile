@@ -7,7 +7,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, Crown, User } from 'lucide-react-native';
-import { supabase } from '../../services/supabase';
+import { supabase } from '../../../services/supabase';
 
 interface StyleConfig {
   backgroundColor?: string;

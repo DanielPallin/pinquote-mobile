@@ -1,11 +1,11 @@
 // app/(tabs)/profile/index.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   View, Text, StyleSheet, Image, TouchableOpacity, 
   ScrollView, ActivityIndicator, Alert, Share as RNShare
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { 
   Edit3, Share, Crown, LayoutTemplate, Settings, Heart 
 } from 'lucide-react-native';
@@ -44,9 +44,12 @@ export default function ProfileScreen() {
   const [user, setUser] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    fetchUserProfile();
-  }, []);
+  // Byt ut den gamla useEffect mot detta:
+  useFocusEffect(
+    useCallback(() => {
+      fetchUserProfile();
+    }, [])
+  );
 
   const fetchUserProfile = async () => {
     try {

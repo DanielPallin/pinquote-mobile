@@ -4,7 +4,7 @@ import {
   View, Text, StyleSheet, Switch, TouchableOpacity, 
   Alert, ActivityIndicator, ScrollView, Platform
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import { ArrowLeft, LogOut, AlertTriangle } from 'lucide-react-native';
 import { supabase } from '../../../services/supabase';
 
@@ -78,30 +78,48 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleDeleteAccount = () => {
-    Alert.alert(
-      'Delete Account',
-      'Are you absolutely sure? This action cannot be undone and all your quotes, likes, and followers will be permanently deleted.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete Permanently', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const { error } = await supabase.rpc('delete_user');
-              if (error) throw error;
-              
-              await supabase.auth.signOut();
-              router.replace('/');
-            } catch (error: any) {
-              Alert.alert('Error', error.message || 'Could not delete account. Please contact support.');
+  const handleDeleteAccount = async () => {
+  Alert.alert(
+    'Delete Account',
+    'Are you completely sure? This will delete all your data and cannot be undone.',
+    [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            // 1. ANVÄND STORAGE API FÖR ATT TA BORT FILER FÖRST
+            // Om du har en bucket som heter 'avatars':
+            const { data: files } = await supabase.storage.from('avatars').list(user.id);
+            
+            if (files && files.length > 0) {
+              const filePaths = files.map(file => `${user.id}/${file.name}`);
+              await supabase.storage.from('avatars').remove(filePaths);
             }
+            if (files && files.length > 0) {
+              const filePaths = files.map(file => `${user.id}/${file.name}`);
+              await supabase.storage.from('quote_media').remove(filePaths);
+            }
+
+            const { error: rpcError } = await supabase.rpc('delete_user');
+            if (rpcError) throw rpcError;
+
+            await supabase.auth.signOut();
+            router.replace('/(auth)/login');
+
+          } catch (error: any) {
+            console.error('Error deleting account:', error);
+            Alert.alert('Error', error.message);
           }
         }
-      ]
-    );
-  };
+      }
+    ]
+  );
+};
 
   if (isLoading) {
     return (
@@ -112,82 +130,87 @@ export default function SettingsScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
-          <ArrowLeft size={24} color="#0f172a" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Settings</Text>
-        <View style={{ width: 40 }} />
+    <>
+      {/* Hides the default Expo Router header */}
+      <Stack.Screen options={{ headerShown: false }} />
+
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
+            <ArrowLeft size={24} color="#0f172a" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Settings</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        
+        <ScrollView contentContainerStyle={styles.content}>
+          
+          {/* NOTIFICATIONS SECTION */}
+          <Text style={styles.sectionTitle}>Notifications</Text>
+          <View style={styles.card}>
+            <View style={styles.settingRow}>
+              <View style={styles.settingTextContainer}>
+                <Text style={styles.settingTitle}>New Comments</Text>
+                <Text style={styles.settingDescription}>When someone comments on your quote</Text>
+              </View>
+              <Switch 
+                value={notifyComments} 
+                onValueChange={(val) => toggleSwitch('notify_comments', val)}
+                trackColor={{ false: '#e2e8f0', true: '#10b981' }}
+                thumbColor={Platform.OS === 'ios' ? '#ffffff' : (notifyComments ? '#ffffff' : '#f8fafc')}
+              />
+            </View>
+            <View style={styles.divider} />
+            
+            <View style={styles.settingRow}>
+              <View style={styles.settingTextContainer}>
+                <Text style={styles.settingTitle}>Reactions & Likes</Text>
+                <Text style={styles.settingDescription}>When someone reacts to your quote</Text>
+              </View>
+              <Switch 
+                value={notifyReactions} 
+                onValueChange={(val) => toggleSwitch('notify_reactions', val)}
+                trackColor={{ false: '#e2e8f0', true: '#10b981' }}
+                thumbColor={Platform.OS === 'ios' ? '#ffffff' : (notifyReactions ? '#ffffff' : '#f8fafc')}
+              />
+            </View>
+            <View style={styles.divider} />
+
+            <View style={styles.settingRow}>
+              <View style={styles.settingTextContainer}>
+                <Text style={styles.settingTitle}>New Followers</Text>
+                <Text style={styles.settingDescription}>When someone starts following you</Text>
+              </View>
+              <Switch 
+                value={notifyFollowers}
+                onValueChange={(val) => toggleSwitch('notify_followers', val)}
+                trackColor={{ false: '#e2e8f0', true: '#10b981' }}
+                thumbColor={Platform.OS === 'ios' ? '#ffffff' : (notifyFollowers ? '#ffffff' : '#f8fafc')}
+              />
+            </View>
+          </View>
+
+          {/* ACCOUNT ACTIONS SECTION */}
+          <Text style={styles.sectionTitle}>Account</Text>
+          <View style={styles.card}>
+            <TouchableOpacity style={styles.actionRow} onPress={handleSignOut}>
+              <LogOut size={20} color="#0f172a" />
+              <Text style={styles.actionText}>Log out</Text>
+            </TouchableOpacity>
+            
+            <View style={styles.divider} />
+            
+            <TouchableOpacity style={styles.actionRow} onPress={handleDeleteAccount}>
+              <AlertTriangle size={20} color="#ef4444" />
+              <Text style={[styles.actionText, styles.destructiveText]}>Delete account</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <Text style={styles.versionText}>PinQuote v1.0.1</Text>
+
+        </ScrollView>
       </View>
-
-      <ScrollView contentContainerStyle={styles.content}>
-        
-        {/* NOTIFICATIONS SECTION */}
-        <Text style={styles.sectionTitle}>Notifications</Text>
-        <View style={styles.card}>
-          <View style={styles.settingRow}>
-            <View style={styles.settingTextContainer}>
-              <Text style={styles.settingTitle}>New Comments</Text>
-              <Text style={styles.settingDescription}>When someone comments on your quote</Text>
-            </View>
-            <Switch 
-              value={notifyComments} 
-              onValueChange={(val) => toggleSwitch('notify_comments', val)}
-              trackColor={{ false: '#e2e8f0', true: '#10b981' }}
-              thumbColor={Platform.OS === 'ios' ? '#ffffff' : (notifyComments ? '#ffffff' : '#f8fafc')}
-            />
-          </View>
-          <View style={styles.divider} />
-          
-          <View style={styles.settingRow}>
-            <View style={styles.settingTextContainer}>
-              <Text style={styles.settingTitle}>Reactions & Likes</Text>
-              <Text style={styles.settingDescription}>When someone reacts to your quote</Text>
-            </View>
-            <Switch 
-              value={notifyReactions} 
-              onValueChange={(val) => toggleSwitch('notify_reactions', val)}
-              trackColor={{ false: '#e2e8f0', true: '#10b981' }}
-              thumbColor={Platform.OS === 'ios' ? '#ffffff' : (notifyReactions ? '#ffffff' : '#f8fafc')}
-            />
-          </View>
-          <View style={styles.divider} />
-
-          <View style={styles.settingRow}>
-            <View style={styles.settingTextContainer}>
-              <Text style={styles.settingTitle}>New Followers</Text>
-              <Text style={styles.settingDescription}>When someone starts following you</Text>
-            </View>
-            <Switch 
-              value={notifyFollowers}
-              onValueChange={(val) => toggleSwitch('notify_followers', val)}
-              trackColor={{ false: '#e2e8f0', true: '#10b981' }}
-              thumbColor={Platform.OS === 'ios' ? '#ffffff' : (notifyFollowers ? '#ffffff' : '#f8fafc')}
-            />
-          </View>
-        </View>
-
-        {/* ACCOUNT ACTIONS SECTION */}
-        <Text style={styles.sectionTitle}>Account</Text>
-        <View style={styles.card}>
-          <TouchableOpacity style={styles.actionRow} onPress={handleSignOut}>
-            <LogOut size={20} color="#0f172a" />
-            <Text style={styles.actionText}>Log out</Text>
-          </TouchableOpacity>
-          
-          <View style={styles.divider} />
-          
-          <TouchableOpacity style={styles.actionRow} onPress={handleDeleteAccount}>
-            <AlertTriangle size={20} color="#ef4444" />
-            <Text style={[styles.actionText, styles.destructiveText]}>Delete account</Text>
-          </TouchableOpacity>
-        </View>
-        
-        <Text style={styles.versionText}>PinQuote v1.0.1</Text>
-
-      </ScrollView>
-    </View>
+    </>
   );
 }
 

@@ -88,7 +88,7 @@ export default function FeedScreen() {
           template_id,
           live_photo_url,
           publisher:profiles!quotes_publisher_id_fkey(id, username),
-          quoted_user:profiles!quotes_quoted_user_id_fkey(username, avatar_url),
+          quoted_user:profiles!quotes_quoted_user_id_fkey(id, username, avatar_url),
           reactions(reaction_type, user_id, comment_id),
           favorites(user_id),
           comments(count)
