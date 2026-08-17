@@ -44,7 +44,6 @@ export default function ProfileScreen() {
   const [user, setUser] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Byt ut den gamla useEffect mot detta:
   useFocusEffect(
     useCallback(() => {
       fetchUserProfile();
